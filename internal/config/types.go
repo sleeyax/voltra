@@ -10,11 +10,12 @@ type Markets struct {
 }
 
 type ScriptOptions struct {
-	TestMode     bool    `mapstructure:"test_mode"`
-	LogTrades    bool    `mapstructure:"log_trades"`
-	LogFile      string  `mapstructure:"log_file"`
-	AmericanUser bool    `mapstructure:"american_user"`
-	Markets      Markets `mapstructure:"markets"`
+	TestMode                bool    `mapstructure:"test_mode"`
+	LogTrades               bool    `mapstructure:"log_trades"`
+	LogFile                 string  `mapstructure:"log_file"`
+	AmericanUser            bool    `mapstructure:"american_user"`
+	Markets                 Markets `mapstructure:"markets"`
+	EnableStructuredLogging bool    `mapstructure:"structured_logging"`
 }
 
 type TradingOptions struct {

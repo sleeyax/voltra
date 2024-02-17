@@ -25,12 +25,13 @@ func (b *Binance) GetCoins(ctx context.Context) ([]Coin, error) {
 	}
 
 	var coins []Coin
+	now := time.Now()
 
 	for _, price := range prices {
 		coin := Coin{
 			Symbol: price.Symbol,
 			Price:  price.Price,
-			Time:   time.Now(),
+			Time:   now,
 		}
 		if coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith) {
 			coins = append(coins, coin)
