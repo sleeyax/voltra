@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/adshao/go-binance/v2"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
+	"strconv"
 	"time"
 )
 
@@ -28,9 +29,10 @@ func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 	now := time.Now()
 
 	for _, price := range prices {
+		priceAsFloat, _ := strconv.ParseFloat(price.Price, 64)
 		coin := Coin{
 			Symbol: price.Symbol,
-			Price:  price.Price,
+			Price:  priceAsFloat,
 			Time:   now,
 		}
 		if coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith) {

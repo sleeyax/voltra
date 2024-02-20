@@ -11,7 +11,7 @@ import (
 
 type Bot struct {
 	market  market.Market
-	history []historyRecord
+	history *History
 	config  config.Configuration
 	log     *zap.SugaredLogger
 }
@@ -24,7 +24,7 @@ func New(c config.Configuration, m market.Market) *Bot {
 		logger, _ = zap.NewDevelopment()
 	}
 	sugar := logger.Sugar()
-	return &Bot{market: m, history: make([]historyRecord, 0), config: c, log: sugar}
+	return &Bot{market: m, history: NewHistory(c.TradingOptions.RecheckInterval), config: c, log: sugar}
 }
 
 func (b *Bot) Close() error {
@@ -34,7 +34,7 @@ func (b *Bot) Close() error {
 // Monitor starts monitoring the market for price changes.
 func (b *Bot) Monitor(ctx context.Context) error {
 	// Seed initial data on bot startup.
-	if len(b.history) == 0 {
+	if b.history.Size() == 0 {
 		b.log.Info("Bot started.")
 		if err := b.updateLatestCoins(ctx); err != nil {
 			return err
@@ -42,10 +42,10 @@ func (b *Bot) Monitor(ctx context.Context) error {
 	}
 
 	// Sleep until the next recheck interval.
-	lastEntry := b.history[len(b.history)-1]
+	lastRecord := b.history.GetLatestRecord()
 	delta := utils.CalculateTimeDelta(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
-	if time.Since(lastEntry.time) < delta {
-		interval := delta - time.Since(lastEntry.time)
+	if time.Since(lastRecord.time) < delta {
+		interval := delta - time.Since(lastRecord.time)
 		b.log.Infof("Sleeping %s.", interval)
 		time.Sleep(interval)
 	}
@@ -55,6 +55,8 @@ func (b *Bot) Monitor(ctx context.Context) error {
 	}
 
 	// TODO: Implement trading logic.
+	volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
+	b.log.Debug(volatileCoins)
 
 	return nil
 }
@@ -68,9 +70,7 @@ func (b *Bot) updateLatestCoins(ctx context.Context) error {
 		return err
 	}
 
-	b.history = append(b.history, historyRecord{time.Now(), coins})
-
-	// TODO: limit history size
+	b.history.AddRecord(coins)
 
 	return nil
 }
