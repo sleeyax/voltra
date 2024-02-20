@@ -18,13 +18,13 @@ func NewBinance(config config.Configuration) *Binance {
 	return &Binance{config: config, client: client}
 }
 
-func (b *Binance) GetCoins(ctx context.Context) ([]Coin, error) {
+func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 	prices, err := b.client.NewListPricesService().Do(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var coins []Coin
+	coins := make(CoinMap)
 	now := time.Now()
 
 	for _, price := range prices {
@@ -34,7 +34,7 @@ func (b *Binance) GetCoins(ctx context.Context) ([]Coin, error) {
 			Time:   now,
 		}
 		if coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith) {
-			coins = append(coins, coin)
+			coins[coin.Symbol] = coin
 		}
 	}
 

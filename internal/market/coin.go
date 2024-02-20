@@ -11,11 +11,13 @@ type Coin struct {
 	Symbol string `json:"symbol"`
 
 	// The price of the coin.
-	Price string `json:"price"`
+	Price float64 `json:"price"`
 
 	// The time this coin was indexed.
 	Time time.Time `json:"time"`
 }
+
+type CoinMap map[string]Coin
 
 func (c Coin) String() string {
 	return c.Symbol
