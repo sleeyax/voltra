@@ -56,7 +56,9 @@ func (b *Bot) Monitor(ctx context.Context) error {
 
 	// TODO: Implement trading logic.
 	volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
-	b.log.Debug(volatileCoins)
+	for coin, percentage := range volatileCoins {
+		b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", coin, percentage, b.config.TradingOptions.TimeDifference)
+	}
 
 	return nil
 }
