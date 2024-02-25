@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/bot"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
+	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
 )
 
@@ -14,7 +15,7 @@ func main() {
 		panic(fmt.Errorf("failed to load config file: %w", err))
 	}
 
-	b := bot.New(c, market.NewBinance(c))
+	b := bot.New(&c, market.NewBinance(c), database.NewLocalDatabase())
 	if err = b.Monitor(context.Background()); err != nil {
 		panic(fmt.Errorf("failed to monitor market: %w", err))
 	}

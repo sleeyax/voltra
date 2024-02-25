@@ -10,6 +10,13 @@ import (
 
 type mockMarket struct{}
 
+// ensure mockMarket implements the Market interface
+var _ market.Market = (*mockMarket)(nil)
+
+func (m mockMarket) Name() string {
+	return "mock market"
+}
+
 func (m mockMarket) Buy(ctx context.Context, coin string, quantity float64) (market.BuyOrder, error) {
 	panic("implement me")
 }
@@ -27,7 +34,7 @@ func (m mockMarket) GetSymbolInfo(_ context.Context, symbol string) (market.Symb
 
 func TestBot_ConvertVolume(t *testing.T) {
 	c := config.Configuration{}
-	b := New(c, mockMarket{})
+	b := New(&c, mockMarket{}, nil)
 	v, err := b.ConvertVolume(context.Background(), 50, market.VolatileCoin{
 		Coin: market.Coin{
 			Symbol: "BTC",

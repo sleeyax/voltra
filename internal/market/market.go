@@ -8,6 +8,9 @@ import (
 var SymbolNotFoundError = errors.New("symbol not found")
 
 type Market interface {
+	// Name returns the name of the market.
+	Name() string
+
 	// GetCoins returns the current price of all coins on the market.
 	GetCoins(ctx context.Context) (CoinMap, error)
 

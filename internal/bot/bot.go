@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
+	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database"
+	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database/models"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/utils"
 	"go.uber.org/zap"
@@ -12,22 +14,23 @@ import (
 )
 
 type Bot struct {
-	market    market.Market
-	history   *History
-	config    config.Configuration
-	log       *zap.SugaredLogger
-	buyOrders market.BuyOrderMap
+	market  market.Market
+	db      database.Database
+	history *History
+	config  *config.Configuration
+	log     *zap.SugaredLogger
 }
 
-func New(c config.Configuration, m market.Market) *Bot {
+func New(config *config.Configuration, market market.Market, db database.Database) *Bot {
 	var logger *zap.Logger
-	if c.ScriptOptions.EnableStructuredLogging {
+	if config.ScriptOptions.EnableStructuredLogging {
 		logger, _ = zap.NewProduction()
 	} else {
 		logger, _ = zap.NewDevelopment()
 	}
 	sugar := logger.Sugar()
-	return &Bot{market: m, history: NewHistory(c.TradingOptions.RecheckInterval), config: c, log: sugar, buyOrders: make(market.BuyOrderMap)}
+	history := NewHistory(config.TradingOptions.RecheckInterval)
+	return &Bot{market: market, history: history, config: config, log: sugar, db: db}
 }
 
 func (b *Bot) Close() error {
@@ -37,11 +40,9 @@ func (b *Bot) Close() error {
 // Monitor starts monitoring the market for price changes.
 func (b *Bot) Monitor(ctx context.Context) error {
 	// Seed initial data on bot startup.
-	if b.history.Size() == 0 {
-		b.log.Info("Bot started.")
-		if err := b.updateLatestCoins(ctx); err != nil {
-			return err
-		}
+	b.log.Info("Bot started.")
+	if err := b.updateLatestCoins(ctx); err != nil {
+		return err
 	}
 
 	// Sleep until the next recheck interval.
@@ -62,6 +63,11 @@ func (b *Bot) Monitor(ctx context.Context) error {
 	for _, volatileCoin := range volatileCoins {
 		b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
+		if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
+			b.log.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
+			continue
+		}
+
 		volume, err := b.ConvertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
 		if err != nil {
 			return err
@@ -75,10 +81,35 @@ func (b *Bot) Monitor(ctx context.Context) error {
 			"percentage", volatileCoin.Percentage,
 			"testMode", b.config.ScriptOptions.TestMode,
 		)
-		if err = b.Buy(ctx, volume, volatileCoin, b.config.ScriptOptions.TestMode); err != nil {
+
+		// Pretend to buy the coin and save the order if test mode is enabled.
+		if b.config.ScriptOptions.TestMode {
+			b.db.SaveOrder(models.Order{
+				BuyOrder: market.BuyOrder{
+					OrderID:         0,
+					Symbol:          volatileCoin.Symbol,
+					Price:           volatileCoin.Price,
+					TransactionTime: time.Now(),
+				},
+				Market:     b.market.Name(),
+				Type:       models.BuyOrder,
+				Volume:     volume,
+				IsTestMode: true,
+			})
+			continue
+		}
+
+		// Otherwise, buy the coin and save the real order.
+		buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
+		if err != nil {
 			return err
 		}
-		// TODO: save buy orders to local database
+		b.db.SaveOrder(models.Order{
+			BuyOrder: buyOrder,
+			Market:   b.market.Name(),
+			Type:     models.BuyOrder,
+			Volume:   volume,
+		})
 	}
 
 	return nil
@@ -117,32 +148,4 @@ func (b *Bot) ConvertVolume(ctx context.Context, quantity float64, volatileCoin 
 	}
 
 	return volume, nil
-}
-
-func (b *Bot) Buy(ctx context.Context, volume float64, volatileCoin market.VolatileCoin, isTestMode bool) error {
-	_, ok := b.buyOrders[volatileCoin.Symbol]
-	if ok {
-		b.log.Infof("Already bought %s. Skipping.", volatileCoin.Symbol)
-		return nil
-	}
-
-	if isTestMode {
-		b.buyOrders[volatileCoin.Symbol] = market.BuyOrder{
-			OrderID:          0,
-			Symbol:           volatileCoin.Symbol,
-			Price:            volatileCoin.Price,
-			TransactionTime:  time.Now().Unix(),
-			ExecutedQuantity: strconv.FormatFloat(volume, 'f', -1, 64),
-		}
-		return nil
-	}
-
-	buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
-	if err != nil {
-		return err
-	}
-
-	b.buyOrders[volatileCoin.Symbol] = buyOrder
-
-	return nil
 }

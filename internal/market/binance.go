@@ -23,6 +23,10 @@ func NewBinance(config config.Configuration) *Binance {
 	return &Binance{config: config, client: client}
 }
 
+func (b *Binance) Name() string {
+	return "binance"
+}
+
 func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 	prices, err := b.client.NewListPricesService().Do(ctx)
 	if err != nil {
@@ -87,10 +91,9 @@ func (b *Binance) Buy(ctx context.Context, coin string, quantity float64) (BuyOr
 	p, _ := strconv.ParseFloat(order.Price, 64)
 
 	return BuyOrder{
-		OrderID:          order.OrderID,
-		Symbol:           order.Symbol,
-		Price:            p,
-		TransactionTime:  order.TransactTime,
-		ExecutedQuantity: order.ExecutedQuantity,
+		OrderID:         order.OrderID,
+		Symbol:          order.Symbol,
+		Price:           p,
+		TransactionTime: time.Unix(order.TransactTime, 0),
 	}, err
 }
