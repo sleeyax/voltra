@@ -69,3 +69,28 @@ func (b *Binance) GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo,
 
 	return SymbolInfo{}, SymbolNotFoundError
 }
+
+func (b *Binance) Buy(ctx context.Context, coin string, quantity float64) (BuyOrder, error) {
+	quantityAsString := strconv.FormatFloat(quantity, 'f', -1, 64) // binance *requires* a string for some reason
+
+	order, err := b.client.NewCreateOrderService().
+		Symbol(coin).
+		Side(binance.SideTypeBuy).
+		Type(binance.OrderTypeMarket).
+		Quantity(quantityAsString).
+		Do(ctx)
+
+	if err != nil {
+		return BuyOrder{}, err
+	}
+
+	p, _ := strconv.ParseFloat(order.Price, 64)
+
+	return BuyOrder{
+		OrderID:          order.OrderID,
+		Symbol:           order.Symbol,
+		Price:            p,
+		TransactionTime:  order.TransactTime,
+		ExecutedQuantity: order.ExecutedQuantity,
+	}, err
+}

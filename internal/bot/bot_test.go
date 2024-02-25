@@ -10,8 +10,11 @@ import (
 
 type mockMarket struct{}
 
+func (m mockMarket) Buy(ctx context.Context, coin string, quantity float64) (market.BuyOrder, error) {
+	panic("implement me")
+}
+
 func (m mockMarket) GetCoins(_ context.Context) (market.CoinMap, error) {
-	//TODO implement me
 	panic("implement me")
 }
 
