@@ -6,6 +6,7 @@ import (
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/utils"
 	"go.uber.org/zap"
+	"strconv"
 	"time"
 )
 
@@ -56,8 +57,13 @@ func (b *Bot) Monitor(ctx context.Context) error {
 
 	// TODO: Implement trading logic.
 	volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
-	for coin, percentage := range volatileCoins {
-		b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", coin, percentage, b.config.TradingOptions.TimeDifference)
+	for _, volatileCoin := range volatileCoins {
+		b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
+		volume, err := b.ConvertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
+		if err != nil {
+			return err
+		}
+		b.log.Infof("Trading %f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol)
 	}
 
 	return nil
@@ -75,4 +81,25 @@ func (b *Bot) updateLatestCoins(ctx context.Context) error {
 	b.history.AddRecord(coins)
 
 	return nil
+}
+
+// ConvertVolume converts the volume given in the configured quantity from base currency (USDT) to each coin's volume.
+func (b *Bot) ConvertVolume(ctx context.Context, quantity float64, volatileCoin market.VolatileCoin) (float64, error) {
+	info, err := b.market.GetSymbolInfo(ctx, volatileCoin.Symbol)
+	if err != nil {
+		return 0, err
+	}
+
+	volume := quantity / volatileCoin.Price
+
+	// Round the volume to the step size of the coin.
+	if info.StepSize != 0 {
+		formattedVolumeString := strconv.FormatFloat(volume, 'f', info.StepSize, 64)
+		volume, err = strconv.ParseFloat(formattedVolumeString, 64)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return volume, nil
 }

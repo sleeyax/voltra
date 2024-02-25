@@ -17,11 +17,9 @@ type HistoryRecord struct {
 	coins market.CoinMap
 }
 
-type VolatileCoins map[string]float64
-
 type History struct {
 	records       []HistoryRecord
-	volatileCoins VolatileCoins
+	volatileCoins market.VolatileCoins
 	maxLength     int
 }
 
@@ -29,7 +27,7 @@ type History struct {
 // The history can be used to monitor the price changes of coins over time.
 // It's a rolling window of records, so the history will never exceed the given max length.
 func NewHistory(maxLength int) *History {
-	return &History{records: make([]HistoryRecord, 0), volatileCoins: make(VolatileCoins), maxLength: maxLength}
+	return &History{records: make([]HistoryRecord, 0), volatileCoins: make(market.VolatileCoins), maxLength: maxLength}
 }
 
 // Size returns the number of records in the history.
@@ -53,9 +51,9 @@ func (h *History) GetLatestRecord() HistoryRecord {
 	return h.records[len(h.records)-1]
 }
 
-func (h *History) calculatePrice(coinKey string, sign int, r1, r2 HistoryRecord) (float64, float64) {
-	_, ok1 := r1.coins[coinKey]
-	_, ok2 := r2.coins[coinKey]
+func (h *History) calculatePrice(symbol string, sign int, r1, r2 HistoryRecord) (float64, float64) {
+	_, ok1 := r1.coins[symbol]
+	_, ok2 := r2.coins[symbol]
 
 	var p1 float64
 	var p2 float64
@@ -68,50 +66,53 @@ func (h *History) calculatePrice(coinKey string, sign int, r1, r2 HistoryRecord)
 	} else if !ok2 {
 		p2 = math.Inf(sign)
 	} else {
-		p1 = r1.coins[coinKey].Price
-		p2 = r2.coins[coinKey].Price
+		p1 = r1.coins[symbol].Price
+		p2 = r2.coins[symbol].Price
 	}
 
 	return p1, p2
 }
 
 // Min returns the record with the lowest price for the given coin.
-func (h *History) Min(coinKey string) HistoryRecord {
+func (h *History) Min(symbol string) HistoryRecord {
 	return slices.MinFunc(h.records, func(r1, r2 HistoryRecord) int {
-		p1, p2 := h.calculatePrice(coinKey, 1, r1, r2)
+		p1, p2 := h.calculatePrice(symbol, 1, r1, r2)
 		return cmp.Compare(p1, p2)
 	})
 }
 
 // Max returns the record with the highest price for the given coin.
-func (h *History) Max(coinKey string) HistoryRecord {
+func (h *History) Max(symbol string) HistoryRecord {
 	return slices.MaxFunc(h.records, func(r1, r2 HistoryRecord) int {
-		p1, p2 := h.calculatePrice(coinKey, -1, r1, r2)
+		p1, p2 := h.calculatePrice(symbol, -1, r1, r2)
 		return cmp.Compare(p1, p2)
 	})
 }
 
 // IdentifyVolatileCoins returns the coins that have a price change of more than the given percentage.
 // Returns a map of coin symbols and their respective price change percentage over the current time window of the history.
-func (h *History) IdentifyVolatileCoins(percentage float64) VolatileCoins {
+func (h *History) IdentifyVolatileCoins(percentage float64) market.VolatileCoins {
 	currentRecord := h.GetLatestRecord()
 
-	for coin := range currentRecord.coins {
-		minRecord := h.Min(coin)
-		maxRecord := h.Max(coin)
+	for symbol, coin := range currentRecord.coins {
+		minRecord := h.Min(symbol)
+		maxRecord := h.Max(symbol)
 
 		polarity := 1.0
 		if minRecord.time.After(maxRecord.time) {
 			polarity = -1.0
 		}
 
-		threshold := polarity * (maxRecord.coins[coin].Price - minRecord.coins[coin].Price) / minRecord.coins[coin].Price * 100.0
+		threshold := polarity * (maxRecord.coins[symbol].Price - minRecord.coins[symbol].Price) / minRecord.coins[symbol].Price * 100.0
 
 		if threshold >= percentage {
-			// only append the coin if it's not already in the map
-			_, ok := h.volatileCoins[coin]
+			// only append the symbol if it's not already in the map
+			_, ok := h.volatileCoins[symbol]
 			if !ok {
-				h.volatileCoins[coin] = threshold
+				h.volatileCoins[symbol] = market.VolatileCoin{
+					Coin:       coin,
+					Percentage: threshold,
+				}
 			}
 		}
 	}

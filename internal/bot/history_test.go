@@ -54,7 +54,7 @@ func TestHistory_IdentifyVolatileCoins(t *testing.T) {
 		"BTCUSDT": {Price: 23_000.0},
 	})
 	v := history.IdentifyVolatileCoins(percentage)
-	assert.Equal(t, percentage, v["BTCUSDT"])
+	assert.Equal(t, percentage, v["BTCUSDT"].Percentage)
 
 	// This coin is already identified as volatile above.
 	// a sudden spike in price shouldn't affect the result within the current time window.
@@ -62,7 +62,7 @@ func TestHistory_IdentifyVolatileCoins(t *testing.T) {
 		"BTCUSDT": {Price: 25_000.0},
 	})
 	v = history.IdentifyVolatileCoins(percentage)
-	assert.Equal(t, percentage, v["BTCUSDT"])
+	assert.Equal(t, percentage, v["BTCUSDT"].Percentage)
 
 	// A brand-new coin should not yet be volatile.
 	history.AddRecord(market.CoinMap{
@@ -70,7 +70,7 @@ func TestHistory_IdentifyVolatileCoins(t *testing.T) {
 	})
 	v = history.IdentifyVolatileCoins(percentage)
 	vv, ok := v["ETHUSDT"]
-	assert.Equal(t, false, ok, vv)
+	assert.Equal(t, false, ok, vv.Percentage)
 
 	// Test price drop.
 	history.AddRecord(market.CoinMap{
@@ -78,7 +78,7 @@ func TestHistory_IdentifyVolatileCoins(t *testing.T) {
 	})
 	v = history.IdentifyVolatileCoins(percentage)
 	vv, ok = v["ETHUSDT"]
-	assert.Equal(t, false, ok, vv)
+	assert.Equal(t, false, ok, vv.Percentage)
 
 	// Test price increase
 	history.AddRecord(market.CoinMap{
@@ -87,5 +87,5 @@ func TestHistory_IdentifyVolatileCoins(t *testing.T) {
 	v = history.IdentifyVolatileCoins(percentage)
 	vv, ok = v["ETHUSDT"]
 	assert.Equal(t, true, ok)
-	assert.Equal(t, 400.0, vv)
+	assert.Equal(t, 400.0, vv.Percentage)
 }

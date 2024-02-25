@@ -5,8 +5,12 @@ import (
 	"github.com/adshao/go-binance/v2"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
 	"strconv"
+	"strings"
 	"time"
 )
+
+// Ensures Binance implements the Market interface.
+var _ Market = (*Binance)(nil)
 
 type Binance struct {
 	config config.Configuration
@@ -41,4 +45,27 @@ func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 	}
 
 	return coins, nil
+}
+
+func (b *Binance) GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo, error) {
+	info, err := b.client.NewExchangeInfoService().Symbol(symbol).Do(ctx)
+	if err != nil {
+		return SymbolInfo{}, err
+	}
+
+	for _, s := range info.Symbols {
+		if s.Symbol == strings.ToUpper(symbol) {
+			stepSize := strings.Index(s.LotSizeFilter().StepSize, "1")
+			if stepSize == -1 {
+				stepSize = 0
+			}
+
+			return SymbolInfo{
+				Symbol:   s.Symbol,
+				StepSize: stepSize,
+			}, nil
+		}
+	}
+
+	return SymbolInfo{}, SymbolNotFoundError
 }

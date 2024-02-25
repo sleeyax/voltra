@@ -17,7 +17,26 @@ type Coin struct {
 	Time time.Time `json:"time"`
 }
 
+type VolatileCoin struct {
+	// The coin that has gained in price.
+	Coin
+
+	// Percentage of price increase.
+	Percentage float64
+}
+
+type VolatileCoins map[string]VolatileCoin
+
 type CoinMap map[string]Coin
+
+type SymbolInfo struct {
+	// The symbol of the coin.
+	Symbol string
+
+	// The step size of the coin.
+	// E.g. "0.00100000" from Binance -> step size of 2 (index number of "1" in the string).
+	StepSize int
+}
 
 func (c Coin) String() string {
 	return c.Symbol
