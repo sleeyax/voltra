@@ -16,7 +16,7 @@ func main() {
 	}
 
 	b := bot.New(&c, market.NewBinance(c), database.NewLocalDatabase())
-	if err = b.Monitor(context.Background()); err != nil {
-		panic(fmt.Errorf("failed to monitor market: %w", err))
+	if err = b.Start(context.Background()); err != nil {
+		panic(fmt.Errorf("failed to start bot: %w", err))
 	}
 }

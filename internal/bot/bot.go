@@ -37,82 +37,91 @@ func (b *Bot) Close() error {
 	return b.log.Sync()
 }
 
-// Monitor starts monitoring the market for price changes.
-func (b *Bot) Monitor(ctx context.Context) error {
+// Start starts monitoring the market for price changes.
+func (b *Bot) Start(ctx context.Context) error {
 	// Seed initial data on bot startup.
 	b.log.Info("Bot started.")
 	if err := b.updateLatestCoins(ctx); err != nil {
-		return err
+		return fmt.Errorf("failed to load initial latest coins: %w", err)
 	}
 
-	// Sleep until the next recheck interval.
-	lastRecord := b.history.GetLatestRecord()
-	delta := utils.CalculateTimeDelta(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
-	if time.Since(lastRecord.time) < delta {
-		interval := delta - time.Since(lastRecord.time)
-		b.log.Infof("Sleeping %s.", interval)
-		time.Sleep(interval)
-	}
+	for {
+		// Wait until the next recheck interval.
+		lastRecord := b.history.GetLatestRecord()
+		delta := utils.CalculateTimeDelta(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
+		if time.Since(lastRecord.time) < delta {
+			interval := delta - time.Since(lastRecord.time)
+			b.log.Infof("Sleeping %s.", interval)
+			time.Sleep(interval)
+		}
 
-	if err := b.updateLatestCoins(ctx); err != nil {
-		return err
-	}
-
-	// TODO: Implement trading logic.
-	volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
-	for _, volatileCoin := range volatileCoins {
-		b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
-
-		if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
-			b.log.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
+		// Fetch the latest coins again after the waiting period.
+		if err := b.updateLatestCoins(ctx); err != nil {
+			b.log.Errorf("Failed to update latest coins: %s.", err)
 			continue
 		}
 
-		volume, err := b.ConvertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
-		if err != nil {
-			return err
-		}
+		// Identify volatile coins in the current time window history and trade them if any are found.
+		volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
+		b.log.Infow(fmt.Sprintf("Found %d volatile coins.", len(volatileCoins)), "history_length", b.history.Size())
+		for _, volatileCoin := range volatileCoins {
+			b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
-		b.log.Infow(fmt.Sprintf("Trading %f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
-			"volume", volume,
-			"pair_with", b.config.TradingOptions.PairWith,
-			"symbol", volatileCoin.Symbol,
-			"price", volatileCoin.Price,
-			"percentage", volatileCoin.Percentage,
-			"testMode", b.config.ScriptOptions.TestMode,
-		)
+			// Skip if the coin has already been bought.
+			if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
+				b.log.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
+				continue
+			}
 
-		// Pretend to buy the coin and save the order if test mode is enabled.
-		if b.config.ScriptOptions.TestMode {
+			// Determine the correct volume to buy based on the configured quantity.
+			volume, err := b.ConvertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
+			if err != nil {
+				b.log.Errorf("Failed to convert volume: %s. Skipping the trade.", err)
+				continue
+			}
+
+			b.log.Infow(fmt.Sprintf("Trading %f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
+				"volume", volume,
+				"pair_with", b.config.TradingOptions.PairWith,
+				"symbol", volatileCoin.Symbol,
+				"price", volatileCoin.Price,
+				"percentage", volatileCoin.Percentage,
+				"testMode", b.config.ScriptOptions.TestMode,
+			)
+
+			// Pretend to buy the coin and save the order if test mode is enabled.
+			if b.config.ScriptOptions.TestMode {
+				b.db.SaveOrder(models.Order{
+					BuyOrder: market.BuyOrder{
+						OrderID:         0,
+						Symbol:          volatileCoin.Symbol,
+						Price:           volatileCoin.Price,
+						TransactionTime: time.Now(),
+					},
+					Market:     b.market.Name(),
+					Type:       models.BuyOrder,
+					Volume:     volume,
+					IsTestMode: true,
+				})
+				continue
+			}
+
+			// Otherwise, buy the coin and save the real order.
+			buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
+			if err != nil {
+				return err
+			}
 			b.db.SaveOrder(models.Order{
-				BuyOrder: market.BuyOrder{
-					OrderID:         0,
-					Symbol:          volatileCoin.Symbol,
-					Price:           volatileCoin.Price,
-					TransactionTime: time.Now(),
-				},
-				Market:     b.market.Name(),
-				Type:       models.BuyOrder,
-				Volume:     volume,
-				IsTestMode: true,
+				BuyOrder: buyOrder,
+				Market:   b.market.Name(),
+				Type:     models.BuyOrder,
+				Volume:   volume,
 			})
-			continue
 		}
 
-		// Otherwise, buy the coin and save the real order.
-		buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
-		if err != nil {
-			return err
-		}
-		b.db.SaveOrder(models.Order{
-			BuyOrder: buyOrder,
-			Market:   b.market.Name(),
-			Type:     models.BuyOrder,
-			Volume:   volume,
-		})
+		// TODO: limit the number of coins that can be bought (via the configured value)
+		// TODO: sell coins
 	}
-
-	return nil
 }
 
 // updateLatestCoins fetches the latest coins from the market and appends them to the history.
