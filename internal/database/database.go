@@ -9,6 +9,7 @@ import (
 type Database interface {
 	SaveOrder(order models.Order)
 	HasOrder(orderType models.OrderType, market, symbol string) bool
+	CountOrders(orderType models.OrderType, market string) int64
 }
 
 const LocalDatabasePath = "data.db"
@@ -38,4 +39,10 @@ func (d *LocalDatabase) HasOrder(orderType models.OrderType, market, symbol stri
 	var count int64
 	d.db.Where("type = ? AND market = ? AND symbol = ?", orderType, market, symbol).Count(&count)
 	return count > 0
+}
+
+func (d *LocalDatabase) CountOrders(orderType models.OrderType, market string) int64 {
+	var count int64
+	d.db.Where("type = ? AND market = ?", orderType, market).Count(&count)
+	return count
 }

@@ -61,9 +61,15 @@ func (b *Bot) Start(ctx context.Context) error {
 			continue
 		}
 
+		// Skip if the max amount of buy orders has been reached.
+		if maxBuyOrders := int64(b.config.TradingOptions.MaxCoins); maxBuyOrders != 0 && b.db.CountOrders(models.BuyOrder, b.market.Name()) >= maxBuyOrders {
+			b.log.Warnf("Max amount of buy orders reached.")
+			continue
+		}
+
 		// Identify volatile coins in the current time window history and trade them if any are found.
 		volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
-		b.log.Infow(fmt.Sprintf("Found %d volatile coins.", len(volatileCoins)), "history_length", b.history.Size())
+		b.log.Infof("Found %d volatile coins.", len(volatileCoins))
 		for _, volatileCoin := range volatileCoins {
 			b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
@@ -119,7 +125,6 @@ func (b *Bot) Start(ctx context.Context) error {
 			})
 		}
 
-		// TODO: limit the number of coins that can be bought (via the configured value)
 		// TODO: sell coins
 	}
 }
