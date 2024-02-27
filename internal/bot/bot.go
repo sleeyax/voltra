@@ -41,6 +41,17 @@ func (b *Bot) Close() error {
 func (b *Bot) Start(ctx context.Context) error {
 	// Seed initial data on bot startup.
 	b.log.Info("Bot started.")
+
+	// TODO: better go-routine management
+	// TODO: proper error handling
+
+	go b.sell(ctx)
+	return b.buy(ctx)
+}
+
+func (b *Bot) buy(ctx context.Context) error {
+	b.log.Info("Watching coins to buy.")
+
 	if err := b.updateLatestCoins(ctx); err != nil {
 		return fmt.Errorf("failed to load initial latest coins: %w", err)
 	}
@@ -131,43 +142,8 @@ func (b *Bot) Start(ctx context.Context) error {
 	}
 }
 
-// updateLatestCoins fetches the latest coins from the market and appends them to the history.
-func (b *Bot) updateLatestCoins(ctx context.Context) error {
-	b.log.Info("Fetching latest coins.")
-
-	coins, err := b.market.GetCoins(ctx)
-	if err != nil {
-		return err
-	}
-
-	b.history.AddRecord(coins)
-
-	return nil
-}
-
-// convertVolume converts the volume given in the configured quantity from base currency (USDT) to each coin's volume.
-func (b *Bot) convertVolume(ctx context.Context, quantity float64, volatileCoin market.VolatileCoin) (float64, error) {
-	info, err := b.market.GetSymbolInfo(ctx, volatileCoin.Symbol)
-	if err != nil {
-		return 0, err
-	}
-
-	volume := quantity / volatileCoin.Price
-
-	// Round the volume to the step size of the coin.
-	if info.StepSize != 0 {
-		formattedVolumeString := strconv.FormatFloat(volume, 'f', info.StepSize, 64)
-		volume, err = strconv.ParseFloat(formattedVolumeString, 64)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	return volume, nil
-}
-
 func (b *Bot) sell(ctx context.Context) error {
-	b.log.Info("Watching for coins to sell.")
+	b.log.Info("Watching coins to sell.")
 
 	for {
 		coins, err := b.market.GetCoins(ctx)
@@ -248,4 +224,39 @@ func (b *Bot) sell(ctx context.Context) error {
 
 		time.Sleep(time.Second * time.Duration(b.config.TradingOptions.SellTimeout))
 	}
+}
+
+// updateLatestCoins fetches the latest coins from the market and appends them to the history.
+func (b *Bot) updateLatestCoins(ctx context.Context) error {
+	b.log.Info("Fetching latest coins.")
+
+	coins, err := b.market.GetCoins(ctx)
+	if err != nil {
+		return err
+	}
+
+	b.history.AddRecord(coins)
+
+	return nil
+}
+
+// convertVolume converts the volume given in the configured quantity from base currency (USDT) to each coin's volume.
+func (b *Bot) convertVolume(ctx context.Context, quantity float64, volatileCoin market.VolatileCoin) (float64, error) {
+	info, err := b.market.GetSymbolInfo(ctx, volatileCoin.Symbol)
+	if err != nil {
+		return 0, err
+	}
+
+	volume := quantity / volatileCoin.Price
+
+	// Round the volume to the step size of the coin.
+	if info.StepSize != 0 {
+		formattedVolumeString := strconv.FormatFloat(volume, 'f', info.StepSize, 64)
+		volume, err = strconv.ParseFloat(formattedVolumeString, 64)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return volume, nil
 }
