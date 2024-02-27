@@ -98,7 +98,7 @@ func (b *Bot) Start(ctx context.Context) error {
 			// Pretend to buy the coin and save the order if test mode is enabled.
 			if b.config.ScriptOptions.TestMode {
 				b.db.SaveOrder(models.Order{
-					BuyOrder: market.BuyOrder{
+					Order: market.Order{
 						OrderID:         0,
 						Symbol:          volatileCoin.Symbol,
 						Price:           volatileCoin.Price,
@@ -107,6 +107,8 @@ func (b *Bot) Start(ctx context.Context) error {
 					Market:     b.market.Name(),
 					Type:       models.BuyOrder,
 					Volume:     volume,
+					TakeProfit: b.config.TradingOptions.TakeProfit,
+					StopLoss:   b.config.TradingOptions.StopLoss,
 					IsTestMode: true,
 				})
 				continue
@@ -118,14 +120,14 @@ func (b *Bot) Start(ctx context.Context) error {
 				return err
 			}
 			b.db.SaveOrder(models.Order{
-				BuyOrder: buyOrder,
-				Market:   b.market.Name(),
-				Type:     models.BuyOrder,
-				Volume:   volume,
+				Order:      buyOrder,
+				Market:     b.market.Name(),
+				Type:       models.BuyOrder,
+				Volume:     volume,
+				TakeProfit: b.config.TradingOptions.TakeProfit,
+				StopLoss:   b.config.TradingOptions.StopLoss,
 			})
 		}
-
-		// TODO: sell coins
 	}
 }
 
@@ -162,4 +164,88 @@ func (b *Bot) convertVolume(ctx context.Context, quantity float64, volatileCoin 
 	}
 
 	return volume, nil
+}
+
+func (b *Bot) sell(ctx context.Context) error {
+	b.log.Info("Watching for coins to sell.")
+
+	for {
+		coins, err := b.market.GetCoins(ctx)
+		if err != nil {
+			return err
+		}
+
+		orders := b.db.GetOrders(models.BuyOrder, b.market.Name())
+		for _, boughtCoin := range orders {
+			takeProfit := boughtCoin.Price + (boughtCoin.Price*boughtCoin.TakeProfit)/100
+			stopLoss := boughtCoin.Price + (boughtCoin.Price*boughtCoin.StopLoss)/100
+			lastPrice := coins[boughtCoin.Symbol].Price
+			buyPrice := boughtCoin.Price
+			priceChange := (lastPrice - buyPrice) / buyPrice * 100
+
+			// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
+			if b.config.TradingOptions.UseTrailingStopLoss && lastPrice > takeProfit {
+				boughtCoin.TakeProfit = priceChange + b.config.TradingOptions.TrailingTakeProfit
+				boughtCoin.StopLoss = boughtCoin.TakeProfit - b.config.TradingOptions.TrailingStopLoss
+				b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, boughtCoin.StopLoss, boughtCoin.TakeProfit)
+				b.db.SaveOrder(boughtCoin)
+				continue
+			}
+
+			// Verify that the price is below the stop loss or above take profit and sell the boughtCoin.
+			if lastPrice < stopLoss || lastPrice > takeProfit {
+				var profitOrLossText string
+				if priceChange >= 0 {
+					profitOrLossText = "profit"
+				} else {
+					profitOrLossText = "loss"
+				}
+
+				estimatedProfitLoss := (b.config.TradingOptions.Quantity * (priceChange - (b.config.TradingOptions.TradingFee * 2))) / 100
+
+				b.log.Infow(
+					fmt.Sprintf("Selling %f %s. Estimated %s: $%s", boughtCoin.Volume, boughtCoin.Symbol, profitOrLossText, strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64)),
+					"symbol", boughtCoin.Symbol,
+					"buyPrice", buyPrice,
+					"lastPrice", lastPrice,
+					"priceChange", priceChange,
+					"tradingFee", b.config.TradingOptions.TradingFee*2,
+					"quantity", b.config.TradingOptions.Quantity,
+					"testMode", b.config.ScriptOptions.TestMode,
+				)
+
+				if b.config.ScriptOptions.TestMode {
+					b.db.SaveOrder(models.Order{
+						Order: market.Order{
+							OrderID:         0,
+							Symbol:          boughtCoin.Symbol,
+							TransactionTime: time.Now(),
+							Price:           lastPrice,
+						},
+						Market:              b.market.Name(),
+						Type:                models.SellOrder,
+						Volume:              boughtCoin.Volume,
+						PriceChange:         priceChange,
+						EstimatedProfitLoss: estimatedProfitLoss,
+					})
+					continue
+				}
+
+				sellOrder, err := b.market.Sell(ctx, boughtCoin.Symbol, boughtCoin.Volume)
+				if err != nil {
+					return err
+				}
+				b.db.SaveOrder(models.Order{
+					Order:               sellOrder,
+					Market:              b.market.Name(),
+					Type:                models.SellOrder,
+					Volume:              boughtCoin.Volume,
+					PriceChange:         priceChange,
+					EstimatedProfitLoss: estimatedProfitLoss,
+				})
+			}
+		}
+
+		time.Sleep(time.Second * time.Duration(b.config.TradingOptions.SellTimeout))
+	}
 }

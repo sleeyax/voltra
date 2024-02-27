@@ -17,7 +17,12 @@ func (m mockMarket) Name() string {
 	return "mock market"
 }
 
-func (m mockMarket) Buy(ctx context.Context, coin string, quantity float64) (market.BuyOrder, error) {
+func (m mockMarket) Buy(ctx context.Context, coin string, quantity float64) (market.Order, error) {
+	panic("implement me")
+}
+
+func (m mockMarket) Sell(ctx context.Context, coin string, quantity float64) (market.Order, error) {
+	//TODO implement me
 	panic("implement me")
 }
 

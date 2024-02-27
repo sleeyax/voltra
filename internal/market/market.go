@@ -18,5 +18,8 @@ type Market interface {
 	GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo, error)
 
 	// Buy buys the given quantity of the given coin.
-	Buy(ctx context.Context, coin string, quantity float64) (BuyOrder, error)
+	Buy(ctx context.Context, coin string, quantity float64) (Order, error)
+
+	// Sell sells the given quantity of the given coin.
+	Sell(ctx context.Context, coin string, quantity float64) (Order, error)
 }

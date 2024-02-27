@@ -26,6 +26,7 @@ type TradingOptions struct {
 	MaxCoins            int      `mapstructure:"max_coins"`
 	TimeDifference      int      `mapstructure:"time_difference"`
 	RecheckInterval     int      `mapstructure:"recheck_interval"`
+	SellTimeout         int      `mapstructure:"sell_timeout"`
 	ChangeInPrice       float64  `mapstructure:"change_in_price"`
 	StopLoss            float64  `mapstructure:"stop_loss"`
 	TakeProfit          float64  `mapstructure:"take_profit"`
