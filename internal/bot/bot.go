@@ -80,7 +80,7 @@ func (b *Bot) Start(ctx context.Context) error {
 			}
 
 			// Determine the correct volume to buy based on the configured quantity.
-			volume, err := b.ConvertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
+			volume, err := b.convertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
 			if err != nil {
 				b.log.Errorf("Failed to convert volume: %s. Skipping the trade.", err)
 				continue
@@ -143,8 +143,8 @@ func (b *Bot) updateLatestCoins(ctx context.Context) error {
 	return nil
 }
 
-// ConvertVolume converts the volume given in the configured quantity from base currency (USDT) to each coin's volume.
-func (b *Bot) ConvertVolume(ctx context.Context, quantity float64, volatileCoin market.VolatileCoin) (float64, error) {
+// convertVolume converts the volume given in the configured quantity from base currency (USDT) to each coin's volume.
+func (b *Bot) convertVolume(ctx context.Context, quantity float64, volatileCoin market.VolatileCoin) (float64, error) {
 	info, err := b.market.GetSymbolInfo(ctx, volatileCoin.Symbol)
 	if err != nil {
 		return 0, err

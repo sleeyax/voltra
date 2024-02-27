@@ -32,10 +32,10 @@ func (m mockMarket) GetSymbolInfo(_ context.Context, symbol string) (market.Symb
 	}, nil
 }
 
-func TestBot_ConvertVolume(t *testing.T) {
+func TestBot_convertVolume(t *testing.T) {
 	c := config.Configuration{}
 	b := New(&c, mockMarket{}, nil)
-	v, err := b.ConvertVolume(context.Background(), 50, market.VolatileCoin{
+	v, err := b.convertVolume(context.Background(), 50, market.VolatileCoin{
 		Coin: market.Coin{
 			Symbol: "BTC",
 			Price:  100,
@@ -45,7 +45,7 @@ func TestBot_ConvertVolume(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 0.5, v)
 
-	v, err = b.ConvertVolume(context.Background(), 50, market.VolatileCoin{
+	v, err = b.convertVolume(context.Background(), 50, market.VolatileCoin{
 		Coin: market.Coin{
 			Symbol: "BTC",
 			Price:  10000,
