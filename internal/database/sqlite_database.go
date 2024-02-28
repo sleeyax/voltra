@@ -18,7 +18,7 @@ func NewSqliteDatabase(dsn string) *SqliteDatabase {
 		panic("failed to connect to the local database")
 	}
 
-	db.AutoMigrate(&models.Order{})
+	_ = db.AutoMigrate(&models.Order{})
 
 	return &SqliteDatabase{db: db}
 }
