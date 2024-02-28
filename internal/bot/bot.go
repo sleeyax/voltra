@@ -107,43 +107,38 @@ func (b *Bot) buy(ctx context.Context) {
 					"testMode", b.config.ScriptOptions.TestMode,
 				)
 
-				// Pretend to buy the coin and save the order if test mode is enabled.
-				if b.config.ScriptOptions.TestMode {
-					b.db.SaveOrder(models.Order{
-						Order: market.Order{
-							OrderID:         0,
-							Symbol:          volatileCoin.Symbol,
-							Price:           volatileCoin.Price,
-							TransactionTime: time.Now(),
-						},
-						Market:     b.market.Name(),
-						Type:       models.BuyOrder,
-						Volume:     volume,
-						TakeProfit: b.config.TradingOptions.TakeProfit,
-						StopLoss:   b.config.TradingOptions.StopLoss,
-						IsTestMode: true,
-					})
-					continue
-				}
-
-				// Otherwise, buy the coin and save the real order.
-				buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
-				if err != nil {
-					b.log.Errorf("Failed to buy %s: %s.", volatileCoin.Symbol, err)
-					continue
-				}
-				b.db.SaveOrder(models.Order{
-					Order:      buyOrder,
+				order := models.Order{
 					Market:     b.market.Name(),
 					Type:       models.BuyOrder,
 					Volume:     volume,
 					TakeProfit: b.config.TradingOptions.TakeProfit,
 					StopLoss:   b.config.TradingOptions.StopLoss,
-				})
+				}
+
+				// Pretend to buy the coin and save the order if test mode is enabled.
+				if b.config.ScriptOptions.TestMode {
+					order.Order = market.Order{
+						OrderID:         0,
+						Symbol:          volatileCoin.Symbol,
+						Price:           volatileCoin.Price,
+						TransactionTime: time.Now(),
+					}
+					order.IsTestMode = true
+				} else {
+					// Otherwise, buy the coin and save the real order.
+					buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
+					if err != nil {
+						b.log.Errorf("Failed to buy %s: %s.", volatileCoin.Symbol, err)
+						continue
+					}
+
+					order.Order = buyOrder
+				}
+
+				b.db.SaveOrder(order)
 			}
 		}
 	}
-
 }
 
 func (b *Bot) sell(ctx context.Context) {
@@ -200,37 +195,33 @@ func (b *Bot) sell(ctx context.Context) {
 						"testMode", b.config.ScriptOptions.TestMode,
 					)
 
-					if b.config.ScriptOptions.TestMode {
-						b.db.SaveOrder(models.Order{
-							Order: market.Order{
-								OrderID:         0,
-								Symbol:          boughtCoin.Symbol,
-								TransactionTime: time.Now(),
-								Price:           lastPrice,
-							},
-							Market:              b.market.Name(),
-							Type:                models.SellOrder,
-							Volume:              boughtCoin.Volume,
-							PriceChange:         priceChange,
-							EstimatedProfitLoss: estimatedProfitLoss,
-						})
-						b.db.DeleteOrder(boughtCoin)
-						continue
-					}
-
-					sellOrder, err := b.market.Sell(ctx, boughtCoin.Symbol, boughtCoin.Volume)
-					if err != nil {
-						b.log.Errorf("Failed to sell %s: %s.", boughtCoin.Symbol, err)
-						continue
-					}
-					b.db.SaveOrder(models.Order{
-						Order:               sellOrder,
+					order := models.Order{
 						Market:              b.market.Name(),
 						Type:                models.SellOrder,
 						Volume:              boughtCoin.Volume,
 						PriceChange:         priceChange,
 						EstimatedProfitLoss: estimatedProfitLoss,
-					})
+					}
+
+					if b.config.ScriptOptions.TestMode {
+						order.Order = market.Order{
+							OrderID:         0,
+							Symbol:          boughtCoin.Symbol,
+							TransactionTime: time.Now(),
+							Price:           lastPrice,
+						}
+						order.IsTestMode = true
+					} else {
+						sellOrder, err := b.market.Sell(ctx, boughtCoin.Symbol, boughtCoin.Volume)
+						if err != nil {
+							b.log.Errorf("Failed to sell %s: %s.", boughtCoin.Symbol, err)
+							continue
+						}
+
+						order.Order = sellOrder
+					}
+
+					b.db.SaveOrder(order)
 					b.db.DeleteOrder(boughtCoin)
 				}
 			}
