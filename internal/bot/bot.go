@@ -58,7 +58,7 @@ func (b *Bot) buy(ctx context.Context) {
 		for {
 			// Wait until the next recheck interval.
 			lastRecord := b.history.GetLatestRecord()
-			delta := utils.CalculateTimeDelta(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
+			delta := utils.CalculateTimeDuration(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
 			if time.Since(lastRecord.time) < delta {
 				interval := delta - time.Since(lastRecord.time)
 				b.log.Infof("Sleeping %s.", interval)
