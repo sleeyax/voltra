@@ -153,7 +153,6 @@ func TestBot_convertVolume(t *testing.T) {
 			Symbol: "BTC",
 			Price:  100,
 		},
-		Percentage: 15,
 	})
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 0.5, v)
@@ -163,8 +162,16 @@ func TestBot_convertVolume(t *testing.T) {
 			Symbol: "BTC",
 			Price:  10000,
 		},
-		Percentage: 15,
 	})
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 0.005, v)
+
+	v, err = b.convertVolume(context.Background(), 10, market.VolatileCoin{
+		Coin: market.Coin{
+			Symbol: "BTC",
+			Price:  11_000,
+		},
+	})
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 0.000909, v)
 }
