@@ -146,6 +146,51 @@ func TestBot_buy_volatile_coin(t *testing.T) {
 	assert.Equal(t, 0.000909, orders[0].Volume)
 }
 
+func TestBot_buy_skip_non_volatile_coin(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+
+	c := &config.Configuration{
+		ScriptOptions: config.ScriptOptions{
+			TestMode:       true,
+			DisableLogging: true,
+		},
+		TradingOptions: config.TradingOptions{
+			ChangeInPrice: 10, // 10%
+			PairWith:      "USDT",
+			Quantity:      10, // trade 10 USDT
+		},
+	}
+
+	m := newMockMarket(cancel)
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
+			Price:  10_000,
+		},
+	})
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
+			Price:  9_000,
+		},
+	})
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
+			Price:  10_000,
+		},
+	})
+
+	db := newMockDatabase()
+
+	b := New(c, m, db)
+
+	b.buy(ctx)
+
+	orders := db.GetOrders(models.BuyOrder, m.Name())
+	assert.Equal(t, 0, len(orders))
+}
+
 func TestBot_convertVolume(t *testing.T) {
 	c := config.Configuration{
 		ScriptOptions: config.ScriptOptions{
