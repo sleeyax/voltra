@@ -124,6 +124,12 @@ func TestBot_buy_volatile_coin(t *testing.T) {
 	m.AddCoins(market.CoinMap{
 		"BTC": market.Coin{
 			Symbol: "BTC",
+			Price:  10_500,
+		},
+	})
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
 			Price:  11_000,
 		},
 	})
