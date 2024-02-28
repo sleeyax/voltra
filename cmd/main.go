@@ -15,6 +15,6 @@ func main() {
 		panic(fmt.Errorf("failed to load config file: %w", err))
 	}
 
-	b := bot.New(&c, market.NewBinance(c), database.NewLocalDatabase())
+	b := bot.New(&c, market.NewBinance(c), database.NewSqliteDatabase("data.db"))
 	b.Start(context.Background())
 }
