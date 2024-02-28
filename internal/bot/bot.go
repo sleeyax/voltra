@@ -38,22 +38,17 @@ func (b *Bot) Close() error {
 }
 
 // Start starts monitoring the market for price changes.
-func (b *Bot) Start(ctx context.Context) error {
-	// Seed initial data on bot startup.
+func (b *Bot) Start(ctx context.Context) {
 	b.log.Info("Bot started.")
-
-	// TODO: better go-routine management
-	// TODO: proper error handling
-
 	go b.sell(ctx)
-	return b.buy(ctx)
+	b.buy(ctx)
 }
 
-func (b *Bot) buy(ctx context.Context) error {
+func (b *Bot) buy(ctx context.Context) {
 	b.log.Info("Watching coins to buy.")
 
 	if err := b.updateLatestCoins(ctx); err != nil {
-		return fmt.Errorf("failed to load initial latest coins: %w", err)
+		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
 	}
 
 	for {
@@ -128,7 +123,8 @@ func (b *Bot) buy(ctx context.Context) error {
 			// Otherwise, buy the coin and save the real order.
 			buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
 			if err != nil {
-				return err
+				b.log.Errorf("Failed to buy %s: %s.", volatileCoin.Symbol, err)
+				continue
 			}
 			b.db.SaveOrder(models.Order{
 				Order:      buyOrder,
@@ -142,13 +138,14 @@ func (b *Bot) buy(ctx context.Context) error {
 	}
 }
 
-func (b *Bot) sell(ctx context.Context) error {
+func (b *Bot) sell(ctx context.Context) {
 	b.log.Info("Watching coins to sell.")
 
 	for {
 		coins, err := b.market.GetCoins(ctx)
 		if err != nil {
-			return err
+			b.log.Errorf("Failed to fetch coins: %s.", err)
+			continue
 		}
 
 		orders := b.db.GetOrders(models.BuyOrder, b.market.Name())
@@ -209,7 +206,8 @@ func (b *Bot) sell(ctx context.Context) error {
 
 				sellOrder, err := b.market.Sell(ctx, boughtCoin.Symbol, boughtCoin.Volume)
 				if err != nil {
-					return err
+					b.log.Errorf("Failed to sell %s: %s.", boughtCoin.Symbol, err)
+					continue
 				}
 				b.db.SaveOrder(models.Order{
 					Order:               sellOrder,
