@@ -14,11 +14,11 @@ import (
 )
 
 type Bot struct {
-	market  market.Market
-	db      database.Database
-	history *History
-	config  *config.Configuration
-	log     *zap.SugaredLogger
+	market           market.Market
+	db               database.Database
+	volatilityWindow *VolatilityWindow
+	config           *config.Configuration
+	log              *zap.SugaredLogger
 }
 
 func New(config *config.Configuration, market market.Market, db database.Database) *Bot {
@@ -29,8 +29,8 @@ func New(config *config.Configuration, market market.Market, db database.Databas
 		logger, _ = zap.NewDevelopment()
 	}
 	sugar := logger.Sugar()
-	history := NewHistory(config.TradingOptions.RecheckInterval)
-	return &Bot{market: market, history: history, config: config, log: sugar, db: db}
+	window := NewVolatilityWindow(config.TradingOptions.RecheckInterval)
+	return &Bot{market: market, volatilityWindow: window, config: config, log: sugar, db: db}
 }
 
 func (b *Bot) Close() error {
@@ -57,7 +57,7 @@ func (b *Bot) buy(ctx context.Context) {
 
 		for {
 			// Wait until the next recheck interval.
-			lastRecord := b.history.GetLatestRecord()
+			lastRecord := b.volatilityWindow.GetLatestRecord()
 			delta := utils.CalculateTimeDuration(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
 			if time.Since(lastRecord.time) < delta {
 				interval := delta - time.Since(lastRecord.time)
@@ -77,8 +77,8 @@ func (b *Bot) buy(ctx context.Context) {
 				continue
 			}
 
-			// Identify volatile coins in the current time window history and trade them if any are found.
-			volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
+			// Identify volatile coins in the current time window volatilityWindow and trade them if any are found.
+			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
 			b.log.Infof("Found %d volatile coins.", len(volatileCoins))
 			for _, volatileCoin := range volatileCoins {
 				b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
@@ -236,7 +236,7 @@ func (b *Bot) sell(ctx context.Context) {
 	}
 }
 
-// updateLatestCoins fetches the latest coins from the market and appends them to the history.
+// updateLatestCoins fetches the latest coins from the market and appends them to the volatilityWindow.
 func (b *Bot) updateLatestCoins(ctx context.Context) error {
 	b.log.Info("Fetching latest coins.")
 
@@ -245,7 +245,7 @@ func (b *Bot) updateLatestCoins(ctx context.Context) error {
 		return err
 	}
 
-	b.history.AddRecord(coins)
+	b.volatilityWindow.AddRecord(coins)
 
 	return nil
 }
