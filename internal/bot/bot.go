@@ -23,7 +23,9 @@ type Bot struct {
 
 func New(config *config.Configuration, market market.Market, db database.Database) *Bot {
 	var logger *zap.Logger
-	if config.ScriptOptions.EnableStructuredLogging {
+	if config.ScriptOptions.DisableLogging {
+		logger = zap.NewNop()
+	} else if config.ScriptOptions.EnableStructuredLogging {
 		logger, _ = zap.NewProduction()
 	} else {
 		logger, _ = zap.NewDevelopment()
@@ -47,15 +49,15 @@ func (b *Bot) Start(ctx context.Context) {
 func (b *Bot) buy(ctx context.Context) {
 	b.log.Info("Watching coins to buy.")
 
-	select {
-	case <-ctx.Done():
-		return
-	default:
-		if err := b.updateLatestCoins(ctx); err != nil {
-			panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
-		}
+	if err := b.updateLatestCoins(ctx); err != nil {
+		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
+	}
 
-		for {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
 			// Wait until the next recheck interval.
 			lastRecord := b.volatilityWindow.GetLatestRecord()
 			delta := utils.CalculateTimeDuration(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
@@ -141,16 +143,18 @@ func (b *Bot) buy(ctx context.Context) {
 			}
 		}
 	}
+
 }
 
 func (b *Bot) sell(ctx context.Context) {
 	b.log.Info("Watching coins to sell.")
 
-	select {
-	case <-ctx.Done():
-		return
-	default:
-		for {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+
 			coins, err := b.market.GetCoins(ctx)
 			if err != nil {
 				b.log.Errorf("Failed to fetch coins: %s.", err)

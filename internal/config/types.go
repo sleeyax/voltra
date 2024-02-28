@@ -16,6 +16,9 @@ type ScriptOptions struct {
 	AmericanUser            bool    `mapstructure:"american_user"`
 	Markets                 Markets `mapstructure:"markets"`
 	EnableStructuredLogging bool    `mapstructure:"structured_logging"`
+	// Disables logging entirely.
+	// This should only be used for testing purposes.
+	DisableLogging bool
 }
 
 type TradingOptions struct {
