@@ -210,6 +210,7 @@ func (b *Bot) sell(ctx context.Context) {
 							PriceChange:         priceChange,
 							EstimatedProfitLoss: estimatedProfitLoss,
 						})
+						b.db.DeleteOrder(boughtCoin)
 						continue
 					}
 
@@ -226,6 +227,7 @@ func (b *Bot) sell(ctx context.Context) {
 						PriceChange:         priceChange,
 						EstimatedProfitLoss: estimatedProfitLoss,
 					})
+					b.db.DeleteOrder(boughtCoin)
 				}
 			}
 

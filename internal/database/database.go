@@ -11,6 +11,7 @@ type Database interface {
 	HasOrder(orderType models.OrderType, market, symbol string) bool
 	CountOrders(orderType models.OrderType, market string) int64
 	GetOrders(orderType models.OrderType, market string) []models.Order
+	DeleteOrder(order models.Order)
 }
 
 const LocalDatabasePath = "data.db"
@@ -52,4 +53,8 @@ func (d *LocalDatabase) GetOrders(orderType models.OrderType, market string) []m
 	var orders []models.Order
 	d.db.Where("type = ? AND market = ?", orderType, market).Find(&orders)
 	return orders
+}
+
+func (d *LocalDatabase) DeleteOrder(order models.Order) {
+	d.db.Delete(&order)
 }
