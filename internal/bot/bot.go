@@ -47,93 +47,98 @@ func (b *Bot) Start(ctx context.Context) {
 func (b *Bot) buy(ctx context.Context) {
 	b.log.Info("Watching coins to buy.")
 
-	if err := b.updateLatestCoins(ctx); err != nil {
-		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
-	}
-
-	for {
-		// Wait until the next recheck interval.
-		lastRecord := b.history.GetLatestRecord()
-		delta := utils.CalculateTimeDelta(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
-		if time.Since(lastRecord.time) < delta {
-			interval := delta - time.Since(lastRecord.time)
-			b.log.Infof("Sleeping %s.", interval)
-			time.Sleep(interval)
-		}
-
-		// Fetch the latest coins again after the waiting period.
+	select {
+	case <-ctx.Done():
+		return
+	default:
 		if err := b.updateLatestCoins(ctx); err != nil {
-			b.log.Errorf("Failed to update latest coins: %s.", err)
-			continue
+			panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
 		}
 
-		// Skip if the max amount of buy orders has been reached.
-		if maxBuyOrders := int64(b.config.TradingOptions.MaxCoins); maxBuyOrders != 0 && b.db.CountOrders(models.BuyOrder, b.market.Name()) >= maxBuyOrders {
-			b.log.Warnf("Max amount of buy orders reached.")
-			continue
-		}
+		for {
+			// Wait until the next recheck interval.
+			lastRecord := b.history.GetLatestRecord()
+			delta := utils.CalculateTimeDelta(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
+			if time.Since(lastRecord.time) < delta {
+				interval := delta - time.Since(lastRecord.time)
+				b.log.Infof("Sleeping %s.", interval)
+				time.Sleep(interval)
+			}
 
-		// Identify volatile coins in the current time window history and trade them if any are found.
-		volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
-		b.log.Infof("Found %d volatile coins.", len(volatileCoins))
-		for _, volatileCoin := range volatileCoins {
-			b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
-
-			// Skip if the coin has already been bought.
-			if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
-				b.log.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
+			// Fetch the latest coins again after the waiting period.
+			if err := b.updateLatestCoins(ctx); err != nil {
+				b.log.Errorf("Failed to update latest coins: %s.", err)
 				continue
 			}
 
-			// Determine the correct volume to buy based on the configured quantity.
-			volume, err := b.convertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
-			if err != nil {
-				b.log.Errorf("Failed to convert volume: %s. Skipping the trade.", err)
+			// Skip if the max amount of buy orders has been reached.
+			if maxBuyOrders := int64(b.config.TradingOptions.MaxCoins); maxBuyOrders != 0 && b.db.CountOrders(models.BuyOrder, b.market.Name()) >= maxBuyOrders {
+				b.log.Warnf("Max amount of buy orders reached.")
 				continue
 			}
 
-			b.log.Infow(fmt.Sprintf("Trading %f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
-				"volume", volume,
-				"pair_with", b.config.TradingOptions.PairWith,
-				"symbol", volatileCoin.Symbol,
-				"price", volatileCoin.Price,
-				"percentage", volatileCoin.Percentage,
-				"testMode", b.config.ScriptOptions.TestMode,
-			)
+			// Identify volatile coins in the current time window history and trade them if any are found.
+			volatileCoins := b.history.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
+			b.log.Infof("Found %d volatile coins.", len(volatileCoins))
+			for _, volatileCoin := range volatileCoins {
+				b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
-			// Pretend to buy the coin and save the order if test mode is enabled.
-			if b.config.ScriptOptions.TestMode {
+				// Skip if the coin has already been bought.
+				if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
+					b.log.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
+					continue
+				}
+
+				// Determine the correct volume to buy based on the configured quantity.
+				volume, err := b.convertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
+				if err != nil {
+					b.log.Errorf("Failed to convert volume: %s. Skipping the trade.", err)
+					continue
+				}
+
+				b.log.Infow(fmt.Sprintf("Trading %f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
+					"volume", volume,
+					"pair_with", b.config.TradingOptions.PairWith,
+					"symbol", volatileCoin.Symbol,
+					"price", volatileCoin.Price,
+					"percentage", volatileCoin.Percentage,
+					"testMode", b.config.ScriptOptions.TestMode,
+				)
+
+				// Pretend to buy the coin and save the order if test mode is enabled.
+				if b.config.ScriptOptions.TestMode {
+					b.db.SaveOrder(models.Order{
+						Order: market.Order{
+							OrderID:         0,
+							Symbol:          volatileCoin.Symbol,
+							Price:           volatileCoin.Price,
+							TransactionTime: time.Now(),
+						},
+						Market:     b.market.Name(),
+						Type:       models.BuyOrder,
+						Volume:     volume,
+						TakeProfit: b.config.TradingOptions.TakeProfit,
+						StopLoss:   b.config.TradingOptions.StopLoss,
+						IsTestMode: true,
+					})
+					continue
+				}
+
+				// Otherwise, buy the coin and save the real order.
+				buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
+				if err != nil {
+					b.log.Errorf("Failed to buy %s: %s.", volatileCoin.Symbol, err)
+					continue
+				}
 				b.db.SaveOrder(models.Order{
-					Order: market.Order{
-						OrderID:         0,
-						Symbol:          volatileCoin.Symbol,
-						Price:           volatileCoin.Price,
-						TransactionTime: time.Now(),
-					},
+					Order:      buyOrder,
 					Market:     b.market.Name(),
 					Type:       models.BuyOrder,
 					Volume:     volume,
 					TakeProfit: b.config.TradingOptions.TakeProfit,
 					StopLoss:   b.config.TradingOptions.StopLoss,
-					IsTestMode: true,
 				})
-				continue
 			}
-
-			// Otherwise, buy the coin and save the real order.
-			buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
-			if err != nil {
-				b.log.Errorf("Failed to buy %s: %s.", volatileCoin.Symbol, err)
-				continue
-			}
-			b.db.SaveOrder(models.Order{
-				Order:      buyOrder,
-				Market:     b.market.Name(),
-				Type:       models.BuyOrder,
-				Volume:     volume,
-				TakeProfit: b.config.TradingOptions.TakeProfit,
-				StopLoss:   b.config.TradingOptions.StopLoss,
-			})
 		}
 	}
 }
@@ -141,86 +146,91 @@ func (b *Bot) buy(ctx context.Context) {
 func (b *Bot) sell(ctx context.Context) {
 	b.log.Info("Watching coins to sell.")
 
-	for {
-		coins, err := b.market.GetCoins(ctx)
-		if err != nil {
-			b.log.Errorf("Failed to fetch coins: %s.", err)
-			continue
-		}
-
-		orders := b.db.GetOrders(models.BuyOrder, b.market.Name())
-		for _, boughtCoin := range orders {
-			takeProfit := boughtCoin.Price + (boughtCoin.Price*boughtCoin.TakeProfit)/100
-			stopLoss := boughtCoin.Price + (boughtCoin.Price*boughtCoin.StopLoss)/100
-			lastPrice := coins[boughtCoin.Symbol].Price
-			buyPrice := boughtCoin.Price
-			priceChange := (lastPrice - buyPrice) / buyPrice * 100
-
-			// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
-			if b.config.TradingOptions.UseTrailingStopLoss && lastPrice > takeProfit {
-				boughtCoin.TakeProfit = priceChange + b.config.TradingOptions.TrailingTakeProfit
-				boughtCoin.StopLoss = boughtCoin.TakeProfit - b.config.TradingOptions.TrailingStopLoss
-				b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, boughtCoin.StopLoss, boughtCoin.TakeProfit)
-				b.db.SaveOrder(boughtCoin)
+	select {
+	case <-ctx.Done():
+		return
+	default:
+		for {
+			coins, err := b.market.GetCoins(ctx)
+			if err != nil {
+				b.log.Errorf("Failed to fetch coins: %s.", err)
 				continue
 			}
 
-			// Verify that the price is below the stop loss or above take profit and sell the boughtCoin.
-			if lastPrice < stopLoss || lastPrice > takeProfit {
-				var profitOrLossText string
-				if priceChange >= 0 {
-					profitOrLossText = "profit"
-				} else {
-					profitOrLossText = "loss"
+			orders := b.db.GetOrders(models.BuyOrder, b.market.Name())
+			for _, boughtCoin := range orders {
+				takeProfit := boughtCoin.Price + (boughtCoin.Price*boughtCoin.TakeProfit)/100
+				stopLoss := boughtCoin.Price + (boughtCoin.Price*boughtCoin.StopLoss)/100
+				lastPrice := coins[boughtCoin.Symbol].Price
+				buyPrice := boughtCoin.Price
+				priceChange := (lastPrice - buyPrice) / buyPrice * 100
+
+				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
+				if b.config.TradingOptions.UseTrailingStopLoss && lastPrice > takeProfit {
+					boughtCoin.TakeProfit = priceChange + b.config.TradingOptions.TrailingTakeProfit
+					boughtCoin.StopLoss = boughtCoin.TakeProfit - b.config.TradingOptions.TrailingStopLoss
+					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, boughtCoin.StopLoss, boughtCoin.TakeProfit)
+					b.db.SaveOrder(boughtCoin)
+					continue
 				}
 
-				estimatedProfitLoss := (b.config.TradingOptions.Quantity * (priceChange - (b.config.TradingOptions.TradingFee * 2))) / 100
+				// Verify that the price is below the stop loss or above take profit and sell the boughtCoin.
+				if lastPrice < stopLoss || lastPrice > takeProfit {
+					var profitOrLossText string
+					if priceChange >= 0 {
+						profitOrLossText = "profit"
+					} else {
+						profitOrLossText = "loss"
+					}
 
-				b.log.Infow(
-					fmt.Sprintf("Selling %f %s. Estimated %s: $%s", boughtCoin.Volume, boughtCoin.Symbol, profitOrLossText, strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64)),
-					"symbol", boughtCoin.Symbol,
-					"buyPrice", buyPrice,
-					"lastPrice", lastPrice,
-					"priceChange", priceChange,
-					"tradingFee", b.config.TradingOptions.TradingFee*2,
-					"quantity", b.config.TradingOptions.Quantity,
-					"testMode", b.config.ScriptOptions.TestMode,
-				)
+					estimatedProfitLoss := (b.config.TradingOptions.Quantity * (priceChange - (b.config.TradingOptions.TradingFee * 2))) / 100
 
-				if b.config.ScriptOptions.TestMode {
+					b.log.Infow(
+						fmt.Sprintf("Selling %f %s. Estimated %s: $%s", boughtCoin.Volume, boughtCoin.Symbol, profitOrLossText, strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64)),
+						"symbol", boughtCoin.Symbol,
+						"buyPrice", buyPrice,
+						"lastPrice", lastPrice,
+						"priceChange", priceChange,
+						"tradingFee", b.config.TradingOptions.TradingFee*2,
+						"quantity", b.config.TradingOptions.Quantity,
+						"testMode", b.config.ScriptOptions.TestMode,
+					)
+
+					if b.config.ScriptOptions.TestMode {
+						b.db.SaveOrder(models.Order{
+							Order: market.Order{
+								OrderID:         0,
+								Symbol:          boughtCoin.Symbol,
+								TransactionTime: time.Now(),
+								Price:           lastPrice,
+							},
+							Market:              b.market.Name(),
+							Type:                models.SellOrder,
+							Volume:              boughtCoin.Volume,
+							PriceChange:         priceChange,
+							EstimatedProfitLoss: estimatedProfitLoss,
+						})
+						continue
+					}
+
+					sellOrder, err := b.market.Sell(ctx, boughtCoin.Symbol, boughtCoin.Volume)
+					if err != nil {
+						b.log.Errorf("Failed to sell %s: %s.", boughtCoin.Symbol, err)
+						continue
+					}
 					b.db.SaveOrder(models.Order{
-						Order: market.Order{
-							OrderID:         0,
-							Symbol:          boughtCoin.Symbol,
-							TransactionTime: time.Now(),
-							Price:           lastPrice,
-						},
+						Order:               sellOrder,
 						Market:              b.market.Name(),
 						Type:                models.SellOrder,
 						Volume:              boughtCoin.Volume,
 						PriceChange:         priceChange,
 						EstimatedProfitLoss: estimatedProfitLoss,
 					})
-					continue
 				}
-
-				sellOrder, err := b.market.Sell(ctx, boughtCoin.Symbol, boughtCoin.Volume)
-				if err != nil {
-					b.log.Errorf("Failed to sell %s: %s.", boughtCoin.Symbol, err)
-					continue
-				}
-				b.db.SaveOrder(models.Order{
-					Order:               sellOrder,
-					Market:              b.market.Name(),
-					Type:                models.SellOrder,
-					Volume:              boughtCoin.Volume,
-					PriceChange:         priceChange,
-					EstimatedProfitLoss: estimatedProfitLoss,
-				})
 			}
-		}
 
-		time.Sleep(time.Second * time.Duration(b.config.TradingOptions.SellTimeout))
+			time.Sleep(time.Second * time.Duration(b.config.TradingOptions.SellTimeout))
+		}
 	}
 }
 
