@@ -105,7 +105,7 @@ func (m *mockDatabase) DeleteOrder(order models.Order) {
 	delete(m.orders, order.Symbol)
 }
 
-func TestBot_buy_volatile_coin(t *testing.T) {
+func TestBot_buy(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 
 	c := &config.Configuration{
@@ -126,17 +126,29 @@ func TestBot_buy_volatile_coin(t *testing.T) {
 			Symbol: "BTC",
 			Price:  10_000,
 		},
+		"ETH": market.Coin{
+			Symbol: "ETH",
+			Price:  10_000,
+		},
 	})
 	m.AddCoins(market.CoinMap{
 		"BTC": market.Coin{
 			Symbol: "BTC",
 			Price:  10_500,
 		},
+		"ETH": market.Coin{
+			Symbol: "ETH",
+			Price:  9_000,
+		},
 	})
 	m.AddCoins(market.CoinMap{
 		"BTC": market.Coin{
 			Symbol: "BTC",
 			Price:  11_000,
+		},
+		"ETH": market.Coin{
+			Symbol: "ETH",
+			Price:  10_000,
 		},
 	})
 
@@ -150,51 +162,6 @@ func TestBot_buy_volatile_coin(t *testing.T) {
 	assert.Equal(t, 1, len(orders))
 	assert.Equal(t, "BTC", orders[0].Symbol)
 	assert.Equal(t, 0.000909, orders[0].Volume)
-}
-
-func TestBot_buy_skip_non_volatile_coin(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-
-	c := &config.Configuration{
-		ScriptOptions: config.ScriptOptions{
-			TestMode:       true,
-			DisableLogging: true,
-		},
-		TradingOptions: config.TradingOptions{
-			ChangeInPrice: 10, // 10%
-			PairWith:      "USDT",
-			Quantity:      10, // trade 10 USDT
-		},
-	}
-
-	m := newMockMarket(cancel)
-	m.AddCoins(market.CoinMap{
-		"BTC": market.Coin{
-			Symbol: "BTC",
-			Price:  10_000,
-		},
-	})
-	m.AddCoins(market.CoinMap{
-		"BTC": market.Coin{
-			Symbol: "BTC",
-			Price:  9_000,
-		},
-	})
-	m.AddCoins(market.CoinMap{
-		"BTC": market.Coin{
-			Symbol: "BTC",
-			Price:  10_000,
-		},
-	})
-
-	db := newMockDatabase()
-
-	b := New(c, m, db)
-
-	b.buy(ctx)
-
-	orders := db.GetOrders(models.BuyOrder, m.Name())
-	assert.Equal(t, 0, len(orders))
 }
 
 func TestBot_sell_profitable_coins(t *testing.T) {
@@ -244,6 +211,8 @@ func TestBot_sell_profitable_coins(t *testing.T) {
 	assert.Equal(t, int64(0), db.CountOrders(models.SellOrder, m.Name()))
 	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
 }
+
+// TODO: test sell: trailing stop loss
 
 func TestBot_convertVolume(t *testing.T) {
 	c := config.Configuration{
