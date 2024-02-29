@@ -9,6 +9,7 @@ import (
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/utils"
 	"go.uber.org/zap"
+	"math"
 	"strconv"
 	"time"
 )
@@ -159,15 +160,15 @@ func (b *Bot) sell(ctx context.Context) {
 			orders := b.db.GetOrders(models.BuyOrder, b.market.Name())
 			for _, boughtCoin := range orders {
 				takeProfit := boughtCoin.Price + (boughtCoin.Price*boughtCoin.TakeProfit)/100
-				stopLoss := boughtCoin.Price + (boughtCoin.Price*boughtCoin.StopLoss)/100
+				stopLoss := boughtCoin.Price + (boughtCoin.Price*(-1*math.Abs(boughtCoin.StopLoss)))/100
 				lastPrice := coins[boughtCoin.Symbol].Price
 				buyPrice := boughtCoin.Price
 				priceChangePercentage := (lastPrice - buyPrice) / buyPrice * 100
 
 				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
-				if b.config.TradingOptions.UseTrailingStopLoss && lastPrice > takeProfit {
-					boughtCoin.TakeProfit = priceChangePercentage + b.config.TradingOptions.TrailingTakeProfit
+				if b.config.TradingOptions.UseTrailingStopLoss && lastPrice >= takeProfit {
 					boughtCoin.StopLoss = boughtCoin.TakeProfit - b.config.TradingOptions.TrailingStopLoss
+					boughtCoin.TakeProfit = priceChangePercentage + b.config.TradingOptions.TrailingTakeProfit
 					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, boughtCoin.StopLoss, boughtCoin.TakeProfit)
 					b.db.SaveOrder(boughtCoin)
 					continue
@@ -184,15 +185,15 @@ func (b *Bot) sell(ctx context.Context) {
 
 					estimatedProfitLoss := (lastPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFee * 2))
 					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFee * 2)) / 100
-					estimatedProfitLossPercentageWithFees := priceChangePercentage - (b.config.TradingOptions.TradingFee * 2)
 					msg := fmt.Sprintf(
-						"Selling %f %s. Estimated %s: $%s ($%s including fees) %s%%",
+						"Selling %f %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
 						boughtCoin.Volume,
 						boughtCoin.Symbol,
 						profitOrLossText,
 						strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64),
+						strconv.FormatFloat(priceChangePercentage, 'f', 2, 64),
 						strconv.FormatFloat(estimatedProfitLossWithFees, 'f', 2, 64),
-						strconv.FormatFloat(estimatedProfitLossPercentageWithFees, 'f', 2, 64),
+						strconv.FormatFloat(priceChangePercentage-(b.config.TradingOptions.TradingFee*2), 'f', 2, 64),
 					)
 
 					b.log.Infow(
