@@ -8,9 +8,7 @@ import (
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database/models"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/maps"
 	"testing"
-	"time"
 )
 
 type mockMarket struct {
@@ -79,12 +77,12 @@ func newMockDatabase() *mockDatabase {
 }
 
 func (m *mockDatabase) SaveOrder(order models.Order) {
-	m.orders[order.Symbol] = order
+	m.orders[order.Symbol+string(order.Type)] = order
 }
 
 func (m *mockDatabase) HasOrder(orderType models.OrderType, market, symbol string) bool {
-	_, ok := m.orders[symbol]
-	return ok
+	order, ok := m.orders[symbol+string(orderType)]
+	return ok && order.Type == orderType && order.Market == market
 }
 
 func (m *mockDatabase) CountOrders(orderType models.OrderType, market string) int64 {
@@ -98,15 +96,21 @@ func (m *mockDatabase) CountOrders(orderType models.OrderType, market string) in
 }
 
 func (m *mockDatabase) GetOrders(orderType models.OrderType, market string) []models.Order {
-	return maps.Values(m.orders)
+	var orders []models.Order
+	for _, order := range m.orders {
+		if order.Type == orderType && order.Market == market {
+			orders = append(orders, order)
+		}
+	}
+	return orders
 }
 
 func (m *mockDatabase) DeleteOrder(order models.Order) {
-	delete(m.orders, order.Symbol)
+	delete(m.orders, order.Symbol+string(order.Type))
 }
 
 func TestBot_buy(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &config.Configuration{
 		ScriptOptions: config.ScriptOptions{
@@ -164,8 +168,8 @@ func TestBot_buy(t *testing.T) {
 	assert.Equal(t, 0.000909, orders[0].Volume)
 }
 
-func TestBot_sell_profitable_coins(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+func TestBot_sell(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &config.Configuration{
 		ScriptOptions: config.ScriptOptions{
@@ -177,7 +181,7 @@ func TestBot_sell_profitable_coins(t *testing.T) {
 			PairWith:      "USDT",
 			Quantity:      15,
 			TakeProfit:    0.1,
-			StopLoss:      -5,
+			StopLoss:      5,
 			TradingFee:    0.075,
 		},
 	}
@@ -208,11 +212,9 @@ func TestBot_sell_profitable_coins(t *testing.T) {
 
 	b.sell(ctx)
 
-	assert.Equal(t, int64(0), db.CountOrders(models.SellOrder, m.Name()))
+	assert.Equal(t, int64(1), db.CountOrders(models.SellOrder, m.Name()))
 	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
 }
-
-// TODO: test sell: trailing stop loss
 
 func TestBot_convertVolume(t *testing.T) {
 	c := config.Configuration{
