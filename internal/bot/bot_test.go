@@ -88,7 +88,13 @@ func (m *mockDatabase) HasOrder(orderType models.OrderType, market, symbol strin
 }
 
 func (m *mockDatabase) CountOrders(orderType models.OrderType, market string) int64 {
-	return int64(len(m.orders))
+	var count int64
+	for _, order := range m.orders {
+		if order.Type == orderType && order.Market == market {
+			count++
+		}
+	}
+	return count
 }
 
 func (m *mockDatabase) GetOrders(orderType models.OrderType, market string) []models.Order {
@@ -189,6 +195,54 @@ func TestBot_buy_skip_non_volatile_coin(t *testing.T) {
 
 	orders := db.GetOrders(models.BuyOrder, m.Name())
 	assert.Equal(t, 0, len(orders))
+}
+
+func TestBot_sell_profitable_coins(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+
+	c := &config.Configuration{
+		ScriptOptions: config.ScriptOptions{
+			TestMode:       true,
+			DisableLogging: true,
+		},
+		TradingOptions: config.TradingOptions{
+			ChangeInPrice: 0.5,
+			PairWith:      "USDT",
+			Quantity:      15,
+			TakeProfit:    0.1,
+			StopLoss:      -5,
+			TradingFee:    0.075,
+		},
+	}
+
+	m := newMockMarket(cancel)
+	m.AddCoins(market.CoinMap{
+		"XTZUSDT": market.Coin{
+			Symbol: "XTZUSDT",
+			Price:  1.295,
+		},
+	})
+
+	db := newMockDatabase()
+	db.SaveOrder(models.Order{
+		Order: market.Order{
+			Symbol: "XTZUSDT",
+			Price:  1.292,
+		},
+		Market:     m.Name(),
+		Type:       models.BuyOrder,
+		Volume:     11.6,
+		TakeProfit: c.TradingOptions.TakeProfit,
+		StopLoss:   c.TradingOptions.StopLoss,
+		IsTestMode: true,
+	})
+
+	b := New(c, m, db)
+
+	b.sell(ctx)
+
+	assert.Equal(t, int64(0), db.CountOrders(models.SellOrder, m.Name()))
+	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
 }
 
 func TestBot_convertVolume(t *testing.T) {

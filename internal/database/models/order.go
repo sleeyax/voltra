@@ -37,7 +37,7 @@ type Order struct {
 
 	// Optional field for the estimated profit.
 	// This field is only set when the type is a sell order.
-	PriceChange float64
+	PriceChangePercentage float64
 
 	// Optional field for the estimated profit or loss.
 	// This field is only set when the type is a sell order.

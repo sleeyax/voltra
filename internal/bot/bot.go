@@ -162,11 +162,11 @@ func (b *Bot) sell(ctx context.Context) {
 				stopLoss := boughtCoin.Price + (boughtCoin.Price*boughtCoin.StopLoss)/100
 				lastPrice := coins[boughtCoin.Symbol].Price
 				buyPrice := boughtCoin.Price
-				priceChange := (lastPrice - buyPrice) / buyPrice * 100
+				priceChangePercentage := (lastPrice - buyPrice) / buyPrice * 100
 
 				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
 				if b.config.TradingOptions.UseTrailingStopLoss && lastPrice > takeProfit {
-					boughtCoin.TakeProfit = priceChange + b.config.TradingOptions.TrailingTakeProfit
+					boughtCoin.TakeProfit = priceChangePercentage + b.config.TradingOptions.TrailingTakeProfit
 					boughtCoin.StopLoss = boughtCoin.TakeProfit - b.config.TradingOptions.TrailingStopLoss
 					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, boughtCoin.StopLoss, boughtCoin.TakeProfit)
 					b.db.SaveOrder(boughtCoin)
@@ -174,33 +174,37 @@ func (b *Bot) sell(ctx context.Context) {
 				}
 
 				// Verify that the price is below the stop loss or above take profit and sell the boughtCoin.
-				if lastPrice < stopLoss || lastPrice > takeProfit {
+				if lastPrice <= stopLoss || lastPrice >= takeProfit {
 					var profitOrLossText string
-					if priceChange >= 0 {
+					if priceChangePercentage >= 0 {
 						profitOrLossText = "profit"
 					} else {
 						profitOrLossText = "loss"
 					}
 
-					estimatedProfitLoss := (b.config.TradingOptions.Quantity * (priceChange - (b.config.TradingOptions.TradingFee * 2))) / 100
+					estimatedProfitLoss := (b.config.TradingOptions.Quantity * priceChangePercentage) / 100
+					estimatedProfitLossStr := strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64)
+					estimatedProfitLossWithFees := (b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFee * 2))) / 100
+					estimatedProfitLossWithFeesStr := strconv.FormatFloat(estimatedProfitLossWithFees, 'f', 2, 64)
 
 					b.log.Infow(
-						fmt.Sprintf("Selling %f %s. Estimated %s: $%s", boughtCoin.Volume, boughtCoin.Symbol, profitOrLossText, strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64)),
+						fmt.Sprintf("Selling %f %s. Estimated %s%%: $%s ($%s including fees)", boughtCoin.Volume, boughtCoin.Symbol, profitOrLossText, estimatedProfitLossStr, estimatedProfitLossWithFeesStr),
 						"symbol", boughtCoin.Symbol,
 						"buyPrice", buyPrice,
-						"lastPrice", lastPrice,
-						"priceChange", priceChange,
+						"currentPrice", lastPrice,
+						"priceChangePercentage", priceChangePercentage,
+						"priceChangePercentageWithFees", priceChangePercentage-(b.config.TradingOptions.TradingFee*2),
 						"tradingFee", b.config.TradingOptions.TradingFee*2,
 						"quantity", b.config.TradingOptions.Quantity,
 						"testMode", b.config.ScriptOptions.TestMode,
 					)
 
 					order := models.Order{
-						Market:              b.market.Name(),
-						Type:                models.SellOrder,
-						Volume:              boughtCoin.Volume,
-						PriceChange:         priceChange,
-						EstimatedProfitLoss: estimatedProfitLoss,
+						Market:                b.market.Name(),
+						Type:                  models.SellOrder,
+						Volume:                boughtCoin.Volume,
+						PriceChangePercentage: priceChangePercentage,
+						EstimatedProfitLoss:   estimatedProfitLoss,
 					}
 
 					if b.config.ScriptOptions.TestMode {
