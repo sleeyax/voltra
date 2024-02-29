@@ -80,7 +80,7 @@ func (b *Bot) buy(ctx context.Context) {
 				continue
 			}
 
-			// Identify volatile coins in the current time window volatilityWindow and trade them if any are found.
+			// Identify volatile coins in the current time window and trade them if any are found.
 			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
 			b.log.Infof("Found %d volatile coins.", len(volatileCoins))
 			for _, volatileCoin := range volatileCoins {
@@ -268,11 +268,7 @@ func (b *Bot) convertVolume(ctx context.Context, quantity float64, volatileCoin 
 
 	// Round the volume to the step size of the coin.
 	if info.StepSize != 0 {
-		formattedVolumeString := strconv.FormatFloat(volume, 'f', info.StepSize, 64)
-		volume, err = strconv.ParseFloat(formattedVolumeString, 64)
-		if err != nil {
-			return 0, err
-		}
+		volume = utils.RoundStepSize(volume, info.StepSize)
 	}
 
 	return volume, nil

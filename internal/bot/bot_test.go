@@ -60,7 +60,7 @@ func (m *mockMarket) AddCoins(coins market.CoinMap) {
 func (m *mockMarket) GetSymbolInfo(_ context.Context, symbol string) (market.SymbolInfo, error) {
 	return market.SymbolInfo{
 		Symbol:   "BTC",
-		StepSize: 6,
+		StepSize: 0.0000001,
 	}, nil
 }
 
@@ -165,7 +165,7 @@ func TestBot_buy(t *testing.T) {
 	orders := db.GetOrders(models.BuyOrder, m.Name())
 	assert.Equal(t, 1, len(orders))
 	assert.Equal(t, "BTC", orders[0].Symbol)
-	assert.Equal(t, 0.000909, orders[0].Volume)
+	assert.Equal(t, 0.0009091, orders[0].Volume)
 }
 
 func TestBot_sell(t *testing.T) {
@@ -321,5 +321,5 @@ func TestBot_convertVolume(t *testing.T) {
 		},
 	})
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 0.000909, v)
+	assert.Equal(t, 0.0009091, v)
 }

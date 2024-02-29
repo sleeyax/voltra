@@ -5,7 +5,6 @@ import (
 	"github.com/adshao/go-binance/v2"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -58,11 +57,8 @@ func (b *Binance) GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo,
 	}
 
 	for _, s := range info.Symbols {
-		if s.Symbol == strings.ToUpper(symbol) {
-			stepSize := strings.Index(s.LotSizeFilter().StepSize, "1")
-			if stepSize == -1 {
-				stepSize = 0
-			}
+		if s.Symbol == symbol {
+			stepSize, _ := strconv.ParseFloat(s.LotSizeFilter().StepSize, 64)
 
 			return SymbolInfo{
 				Symbol:   s.Symbol,

@@ -34,8 +34,8 @@ type SymbolInfo struct {
 	Symbol string
 
 	// The step size of the coin.
-	// E.g. "0.00100000" from Binance -> step size of 2 (index number of "1" in the string).
-	StepSize int
+	// E.g. 0.001.
+	StepSize float64
 }
 
 func (c Coin) String() string {
