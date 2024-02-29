@@ -182,18 +182,25 @@ func (b *Bot) sell(ctx context.Context) {
 						profitOrLossText = "loss"
 					}
 
-					estimatedProfitLoss := (b.config.TradingOptions.Quantity * priceChangePercentage) / 100
-					estimatedProfitLossStr := strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64)
-					estimatedProfitLossWithFees := (b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFee * 2))) / 100
-					estimatedProfitLossWithFeesStr := strconv.FormatFloat(estimatedProfitLossWithFees, 'f', 2, 64)
+					estimatedProfitLoss := (lastPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFee * 2))
+					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFee * 2)) / 100
+					estimatedProfitLossPercentageWithFees := priceChangePercentage - (b.config.TradingOptions.TradingFee * 2)
+					msg := fmt.Sprintf(
+						"Selling %f %s. Estimated %s: $%s ($%s including fees) %s%%",
+						boughtCoin.Volume,
+						boughtCoin.Symbol,
+						profitOrLossText,
+						strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64),
+						strconv.FormatFloat(estimatedProfitLossWithFees, 'f', 2, 64),
+						strconv.FormatFloat(estimatedProfitLossPercentageWithFees, 'f', 2, 64),
+					)
 
 					b.log.Infow(
-						fmt.Sprintf("Selling %f %s. Estimated %s%%: $%s ($%s including fees)", boughtCoin.Volume, boughtCoin.Symbol, profitOrLossText, estimatedProfitLossStr, estimatedProfitLossWithFeesStr),
+						msg,
 						"symbol", boughtCoin.Symbol,
 						"buyPrice", buyPrice,
 						"currentPrice", lastPrice,
 						"priceChangePercentage", priceChangePercentage,
-						"priceChangePercentageWithFees", priceChangePercentage-(b.config.TradingOptions.TradingFee*2),
 						"tradingFee", b.config.TradingOptions.TradingFee*2,
 						"quantity", b.config.TradingOptions.Quantity,
 						"testMode", b.config.ScriptOptions.TestMode,
