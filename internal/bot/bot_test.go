@@ -216,6 +216,78 @@ func TestBot_sell(t *testing.T) {
 	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
 }
 
+func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := &config.Configuration{
+		ScriptOptions: config.ScriptOptions{
+			TestMode:       true,
+			DisableLogging: true,
+		},
+		TradingOptions: config.TradingOptions{
+			ChangeInPrice:       0.5,
+			PairWith:            "USDT",
+			Quantity:            10,
+			TakeProfit:          10,
+			StopLoss:            5,
+			TradingFee:          0.075,
+			UseTrailingStopLoss: true,
+			TrailingStopLoss:    1,
+			TrailingTakeProfit:  1,
+		},
+	}
+
+	m := newMockMarket(cancel)
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
+			Price:  11_000,
+		},
+	})
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
+			Price:  11_100,
+		},
+	})
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
+			Price:  11_050,
+		},
+	})
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol: "BTC",
+			Price:  9000,
+		},
+	})
+
+	db := newMockDatabase()
+	db.SaveOrder(models.Order{
+		Order: market.Order{
+			Symbol: "BTC",
+			Price:  10_000,
+		},
+		Market:     m.Name(),
+		Type:       models.BuyOrder,
+		Volume:     0.000909,
+		TakeProfit: c.TradingOptions.TakeProfit,
+		StopLoss:   c.TradingOptions.StopLoss,
+		IsTestMode: true,
+	})
+
+	b := New(c, m, db)
+
+	b.sell(ctx)
+
+	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
+	orders := db.GetOrders(models.SellOrder, m.Name())
+	assert.Equal(t, 1, len(orders))
+	assert.Equal(t, float64(-10), orders[0].PriceChangePercentage)
+	assert.Equal(t, float64(9000), orders[0].Price)
+}
+
 func TestBot_convertVolume(t *testing.T) {
 	c := config.Configuration{
 		ScriptOptions: config.ScriptOptions{
