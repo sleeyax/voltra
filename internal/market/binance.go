@@ -18,7 +18,7 @@ type Binance struct {
 
 func NewBinance(config config.Configuration) *Binance {
 	m := config.Markets.Binance
-	client := binance.NewClient(m.ApiKey, m.SecretKey)
+	client := binance.NewClient(m.AccessKey, m.SecretKey)
 	return &Binance{config: config, client: client}
 }
 

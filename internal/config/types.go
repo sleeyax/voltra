@@ -31,7 +31,7 @@ type Markets struct {
 }
 
 type Binance struct {
-	ApiKey    string `mapstructure:"api_key"`
+	AccessKey string `mapstructure:"access_key"`
 	SecretKey string `mapstructure:"secret_key"`
 }
 
