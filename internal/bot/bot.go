@@ -9,6 +9,7 @@ import (
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/utils"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"math"
 	"strconv"
 	"time"
@@ -29,7 +30,9 @@ func New(config *config.Configuration, market market.Market, db database.Databas
 	} else if config.ScriptOptions.EnableStructuredLogging {
 		logger, _ = zap.NewProduction()
 	} else {
-		logger, _ = zap.NewDevelopment()
+		loggerConfig := zap.NewDevelopmentConfig()
+		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger, _ = loggerConfig.Build()
 	}
 	sugar := logger.Sugar()
 	window := NewVolatilityWindow(config.TradingOptions.RecheckInterval)
