@@ -57,6 +57,7 @@ func (b *Bot) buy(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			b.log.Info("Bot stopped buying coins.")
 			return
 		default:
 			// Wait until the next recheck interval.
@@ -148,6 +149,7 @@ func (b *Bot) sell(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			b.log.Info("Bot stopped selling coins.")
 			return
 		default:
 
