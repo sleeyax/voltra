@@ -1,0 +1,200 @@
+# Whether to perform fake or real trades.
+# Setting this to false will use REAL funds, use at your own risk!
+enable_test_mode: true
+
+# Configuration for bot logs.
+logging_options:
+  # Enable or disable logging entirely.
+  # Recommended to set this to true in production and development.
+  # You should only set this to false for testing.
+  enable: true
+
+  # Set this to true if you want to use the structured logging format.
+  # Recommended to set this to true in production and false in development.
+  enable_structured_logging: false
+
+# Configuration for supported cryptocurrency exchanges.
+markets:
+  binance:
+    access_key: PASTE_YOUR_ACCESS_KEY_HERE
+    secret_key: PASTE_YOUR_SECRET_KEY_HERE
+
+# Main configuration for the trading strategy.
+trading_options:
+  # Base currency to use for trading.
+  # Recommended to use USDT for most trading pairs.
+  pair_with: USDT
+
+  # Total amount per trade.
+  # Your base currency balance must be at least `max_coins` * `quantity`.
+  # Binance uses a minimum of 10 USDT per trade, add a bit extra to enable selling if the price drops.
+  # Recommended to specify no less than 12 USDT.
+  quantity: 15
+
+  # The maximum number of coins to buy at a time.
+  # For example, if this is set to 3 and the bot has bought 3 different coins, it will not buy any more until it manages to sell one or more of them.
+  # Your base currency balance must be at least `max_coins` * `quantity`.
+  max_coins: 3
+
+  # The amount of time in MINUTES to wait to calculate the difference from the current price.
+  # Recommended minimum is 1.
+  time_difference: 2
+
+  # Number of times to check for TP/SL during each `time_difference`.
+  # Binance allows a maximum of 1200 requests per minute per IP.
+  # Recommended minimum is 1.
+  recheck_interval: 10
+
+  # The amount of time in SECONDS to wait between each try to sell your current coin holdings.
+  sell_timeout: 30
+
+  # The minimum difference in PERCENTAGE between the previous and current price of a coin to identify it as volatile.
+  change_in_price: 10
+
+  # Specify in PERCENTAGE how much you are willing to lose on a coin.
+  # For example, if you set this to 5, the bot will sell the coin if it drops 5% below the price at which it was bought.
+  stop_loss: 5
+
+  # Specify in PERCENTAGE how much you are looking to gain on a coin.
+  # For example, if you set this to 5, the bot will sell the coin if it rises 5% above the price at which it was bought.
+  take_profit: .8
+
+  # Trading fee in % per trade.
+  #
+  # Binance:
+  # - If using 0.75% (using BNB for fees) you must have BNB in your account to cover trading fees.
+  # - If using BNB for fees, it MUST be enabled in your Binance 'Dashboard' page (checkbox).
+  trading_fee: .075
+
+  # Configuration for trailing stop loss.
+  trailing_stop_options:
+    # Whether to enable trailing stop loss.
+    # If true, the bot will automatically move the stop loss up as the price of the coin increases to 'lock-in' a profit.
+    # Recommended to set this to true.
+    enable: true
+
+    # When `take_profit` is reached, the `stop_loss` is changed to `trailing_stop_loss` PERCENTAGE below `take_profit` hence 'locking in' the profit.
+    trailing_stop_loss: .4
+
+    # When `take_profit` is reached, the `take_profit` is changed to `trailing_take_profit` PERCENTAGE above the current price.
+    trailing_take_profit: .1
+
+  # List of tickers to include.
+  # To disable this feature, set it to an empty list as follows:
+  # allow_list: []
+  allow_list:
+    - 1INCH
+    - AAVE
+    - ADA
+    - ALGO
+    - ALPHA
+    - AR
+    - ARRR
+    - ATOM
+    - AVAX
+    - BAKE
+    - BAT
+    - BCD
+    - BCH
+    - BCHA
+    - BNB
+    - BNT
+    - BSV
+    - BTC
+    - BTCB
+    - BTCST
+    - BTG
+    - CAKE
+    - CCXX
+    - CEL
+    - CELO
+    - CHSB
+    - COMP
+    - CRV
+    - CTC
+    - DAI
+    - DASH
+    - DCR
+    - DFI
+    - DOT
+    - EGLD
+    - ENJ
+    - EOS
+    - ETC
+    - ETH
+    - FIL
+    - FLOW
+    - FTT
+    - GRT
+    - GT
+    - HNT
+    - HT
+    - ICP
+    - ICX
+    - KCS
+    - KLAY
+    - KNC
+    - KSM
+    - LEO
+    - LINK
+    - LPT
+    - LSK
+    - LTC
+    - LUNA
+    - LUSD
+    - MANA
+    - MDX
+    - MIOTA
+    - MIR
+    - MKR
+    - NANO
+    - NEAR
+    - NEO
+    - NEXO
+    - OCEAN
+    - OKB
+    - OMG
+    - ONT
+    - ORC
+    - PROM
+    - PUNDIX
+    - QNT
+    - QTUM
+    - RAY
+    - RENBTC
+    - RLC
+    - RUNE
+    - SNX
+    - SOL
+    - STORJ
+    - STX
+    - SUSHI
+    - THETA
+    - TTT
+    - UMA
+    - UNI
+    - UST
+    - VGX
+    - WAVES
+    - WBNB
+    - WBTC
+    - WRX
+    - XMR
+    - XRP
+    - XTZ
+    - XVS
+    - XWC
+    - YFI
+    - ZEC
+    - ZEN
+    - ZRX
+
+  # List of trading pairs to exclude.
+  # In the example below, we're excluding the most popular fiat pairs.
+  # To disable this feature, set it to an empty list as follows:
+  # allow_list: []
+  deny_list:
+    - EURUSDT
+    - GBPUSDT
+    - JPYUSDT
+    - USDUSDT

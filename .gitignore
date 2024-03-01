@@ -1,4 +1,5 @@
 data/
 *.y*ml
+!config.example.yml
 .idea/
 *.db
