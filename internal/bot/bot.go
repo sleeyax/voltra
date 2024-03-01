@@ -259,16 +259,30 @@ func (b *Bot) updateLatestCoins(ctx context.Context) error {
 
 // convertVolume converts the volume given in the configured quantity from base currency (USDT) to each coin's volume.
 func (b *Bot) convertVolume(ctx context.Context, quantity float64, volatileCoin market.VolatileCoin) (float64, error) {
-	info, err := b.market.GetSymbolInfo(ctx, volatileCoin.Symbol)
-	if err != nil {
-		return 0, err
+	var stepSize float64
+
+	// Get the step size of the coin from the local cache if it exists or from Binance if it doesn't (yet).
+	// The step size never changes, so it's safe to cache it forever.
+	// This approach avoids an additional API request to Binance per trade.
+	cache, ok := b.db.GetCache(volatileCoin.Symbol)
+	if ok {
+		stepSize = cache.StepSize
+	} else {
+		info, err := b.market.GetSymbolInfo(ctx, volatileCoin.Symbol)
+		if err != nil {
+			return 0, err
+		}
+
+		stepSize = info.StepSize
+
+		b.db.SaveCache(models.Cache{Symbol: volatileCoin.Symbol, StepSize: stepSize})
 	}
 
 	volume := quantity / volatileCoin.Price
 
 	// Round the volume to the step size of the coin.
-	if info.StepSize != 0 {
-		volume = utils.RoundStepSize(volume, info.StepSize)
+	if stepSize != 0 {
+		volume = utils.RoundStepSize(volume, stepSize)
 	}
 
 	return volume, nil

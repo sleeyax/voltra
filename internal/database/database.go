@@ -10,4 +10,6 @@ type Database interface {
 	CountOrders(orderType models.OrderType, market string) int64
 	GetOrders(orderType models.OrderType, market string) []models.Order
 	DeleteOrder(order models.Order)
+	SaveCache(cache models.Cache)
+	GetCache(symbol string) (models.Cache, bool)
 }

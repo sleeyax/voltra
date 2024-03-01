@@ -48,3 +48,15 @@ func (d *SqliteDatabase) GetOrders(orderType models.OrderType, market string) []
 func (d *SqliteDatabase) DeleteOrder(order models.Order) {
 	d.db.Delete(&order)
 }
+
+func (d *SqliteDatabase) SaveCache(cache models.Cache) {
+	d.db.Save(&cache)
+}
+
+func (d *SqliteDatabase) GetCache(symbol string) (models.Cache, bool) {
+	var cache models.Cache
+	if err := d.db.Where("symbol = ?", symbol).First(&cache).Error; err != nil {
+		return cache, false
+	}
+	return cache, true
+}

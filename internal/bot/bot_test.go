@@ -109,6 +109,14 @@ func (m *mockDatabase) DeleteOrder(order models.Order) {
 	delete(m.orders, order.Symbol+string(order.Type))
 }
 
+func (m *mockDatabase) SaveCache(_ models.Cache) {
+	// ignore
+}
+
+func (m *mockDatabase) GetCache(_ string) (models.Cache, bool) {
+	return models.Cache{}, false
+}
+
 func TestBot_buy(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -295,7 +303,7 @@ func TestBot_convertVolume(t *testing.T) {
 			DisableLogging: true,
 		},
 	}
-	b := New(&c, newMockMarket(nil), nil)
+	b := New(&c, newMockMarket(nil), newMockDatabase())
 	v, err := b.convertVolume(context.Background(), 50, market.VolatileCoin{
 		Coin: market.Coin{
 			Symbol: "BTC",
