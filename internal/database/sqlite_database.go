@@ -19,6 +19,7 @@ func NewSqliteDatabase(dsn string) *SqliteDatabase {
 	}
 
 	_ = db.AutoMigrate(&models.Order{})
+	_ = db.AutoMigrate(&models.Cache{})
 
 	return &SqliteDatabase{db: db}
 }
