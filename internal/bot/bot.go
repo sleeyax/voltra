@@ -68,7 +68,7 @@ func (b *Bot) buy(ctx context.Context) {
 			delta := utils.CalculateTimeDuration(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
 			if time.Since(lastRecord.time) < delta {
 				interval := delta - time.Since(lastRecord.time)
-				b.log.Infof("Sleeping %s.", interval)
+				b.log.Infof("Waiting %s.", interval.Round(time.Second))
 				time.Sleep(interval)
 			}
 
