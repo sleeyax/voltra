@@ -25,9 +25,9 @@ type Bot struct {
 
 func New(config *config.Configuration, market market.Market, db database.Database) *Bot {
 	var logger *zap.Logger
-	if config.ScriptOptions.DisableLogging {
+	if !config.LoggingOptions.Enable {
 		logger = zap.NewNop()
-	} else if config.ScriptOptions.EnableStructuredLogging {
+	} else if config.LoggingOptions.EnableStructuredLogging {
 		logger, _ = zap.NewProduction()
 	} else {
 		loggerConfig := zap.NewDevelopmentConfig()
@@ -109,7 +109,7 @@ func (b *Bot) buy(ctx context.Context) {
 					"symbol", volatileCoin.Symbol,
 					"price", volatileCoin.Price,
 					"percentage", volatileCoin.Percentage,
-					"testMode", b.config.ScriptOptions.TestMode,
+					"testMode", b.config.EnableTestMode,
 				)
 
 				order := models.Order{
@@ -121,7 +121,7 @@ func (b *Bot) buy(ctx context.Context) {
 				}
 
 				// Pretend to buy the coin and save the order if test mode is enabled.
-				if b.config.ScriptOptions.TestMode {
+				if b.config.EnableTestMode {
 					order.Order = market.Order{
 						OrderID:         0,
 						Symbol:          volatileCoin.Symbol,
@@ -171,9 +171,10 @@ func (b *Bot) sell(ctx context.Context) {
 				priceChangePercentage := (lastPrice - buyPrice) / buyPrice * 100
 
 				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
-				if b.config.TradingOptions.UseTrailingStopLoss && lastPrice >= takeProfit {
-					boughtCoin.StopLoss = boughtCoin.TakeProfit - b.config.TradingOptions.TrailingStopLoss
-					boughtCoin.TakeProfit = priceChangePercentage + b.config.TradingOptions.TrailingTakeProfit
+				if b.config.TradingOptions.TrailingStopOptions.Enable && lastPrice >= takeProfit {
+					trailingStopOptions := b.config.TradingOptions.TrailingStopOptions
+					boughtCoin.StopLoss = boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
+					boughtCoin.TakeProfit = priceChangePercentage + trailingStopOptions.TrailingTakeProfit
 					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, boughtCoin.StopLoss, boughtCoin.TakeProfit)
 					b.db.SaveOrder(boughtCoin)
 					continue
@@ -209,7 +210,7 @@ func (b *Bot) sell(ctx context.Context) {
 						"priceChangePercentage", priceChangePercentage,
 						"tradingFee", b.config.TradingOptions.TradingFee*2,
 						"quantity", b.config.TradingOptions.Quantity,
-						"testMode", b.config.ScriptOptions.TestMode,
+						"testMode", b.config.EnableTestMode,
 					)
 
 					order := models.Order{
@@ -220,7 +221,7 @@ func (b *Bot) sell(ctx context.Context) {
 						EstimatedProfitLoss:   estimatedProfitLoss,
 					}
 
-					if b.config.ScriptOptions.TestMode {
+					if b.config.EnableTestMode {
 						order.Order = market.Order{
 							OrderID:         0,
 							Symbol:          boughtCoin.Symbol,

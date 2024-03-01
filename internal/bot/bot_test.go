@@ -36,7 +36,6 @@ func (m *mockMarket) Buy(ctx context.Context, coin string, quantity float64) (ma
 }
 
 func (m *mockMarket) Sell(ctx context.Context, coin string, quantity float64) (market.Order, error) {
-	//TODO implement me
 	panic("implement me")
 }
 
@@ -121,10 +120,8 @@ func TestBot_buy(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &config.Configuration{
-		ScriptOptions: config.ScriptOptions{
-			TestMode:       true,
-			DisableLogging: true,
-		},
+		EnableTestMode: true,
+		LoggingOptions: config.LoggingOptions{Enable: false},
 		TradingOptions: config.TradingOptions{
 			ChangeInPrice: 10, // 10%
 			PairWith:      "USDT",
@@ -180,10 +177,8 @@ func TestBot_sell(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &config.Configuration{
-		ScriptOptions: config.ScriptOptions{
-			TestMode:       true,
-			DisableLogging: true,
-		},
+		EnableTestMode: true,
+		LoggingOptions: config.LoggingOptions{Enable: false},
 		TradingOptions: config.TradingOptions{
 			ChangeInPrice: 0.5,
 			PairWith:      "USDT",
@@ -228,20 +223,20 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &config.Configuration{
-		ScriptOptions: config.ScriptOptions{
-			TestMode:       true,
-			DisableLogging: true,
-		},
+		EnableTestMode: true,
+		LoggingOptions: config.LoggingOptions{Enable: false},
 		TradingOptions: config.TradingOptions{
-			ChangeInPrice:       0.5,
-			PairWith:            "USDT",
-			Quantity:            10,
-			TakeProfit:          10,
-			StopLoss:            5,
-			TradingFee:          0.075,
-			UseTrailingStopLoss: true,
-			TrailingStopLoss:    1,
-			TrailingTakeProfit:  1,
+			ChangeInPrice: 0.5,
+			PairWith:      "USDT",
+			Quantity:      10,
+			TakeProfit:    10,
+			StopLoss:      5,
+			TradingFee:    0.075,
+			TrailingStopOptions: config.TrailingStopOptions{
+				Enable:             true,
+				TrailingStopLoss:   1,
+				TrailingTakeProfit: 1,
+			},
 		},
 	}
 
@@ -298,10 +293,8 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 
 func TestBot_convertVolume(t *testing.T) {
 	c := config.Configuration{
-		ScriptOptions: config.ScriptOptions{
-			TestMode:       true,
-			DisableLogging: true,
-		},
+		EnableTestMode: true,
+		LoggingOptions: config.LoggingOptions{Enable: false},
 	}
 	b := New(&c, newMockMarket(nil), newMockDatabase())
 	v, err := b.convertVolume(context.Background(), 50, market.VolatileCoin{
