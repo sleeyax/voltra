@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"math"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -46,11 +47,21 @@ func (b *Bot) Close() error {
 // Start starts monitoring the market for price changes.
 func (b *Bot) Start(ctx context.Context) {
 	b.log.Info("Bot started.")
-	go b.sell(ctx)
-	b.buy(ctx)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go b.sell(ctx, &wg)
+	go b.buy(ctx, &wg)
+
+	// Wait for both buy and sell goroutines to finish.
+	wg.Wait()
+
+	b.log.Info("Bot stopped.")
 }
 
-func (b *Bot) buy(ctx context.Context) {
+func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
 	b.log.Info("Watching coins to buy.")
 
 	if err := b.updateLatestCoins(ctx); err != nil {
@@ -99,7 +110,7 @@ func (b *Bot) buy(ctx context.Context) {
 				// Determine the correct volume to buy based on the configured quantity.
 				volume, err := b.convertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
 				if err != nil {
-					b.log.Errorf("Failed to convert volume: %s. Skipping the trade.", err)
+					b.log.Errorf("Failed to convert volume. Skipping the trade: %s", err)
 					continue
 				}
 
@@ -146,7 +157,8 @@ func (b *Bot) buy(ctx context.Context) {
 	}
 }
 
-func (b *Bot) sell(ctx context.Context) {
+func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
 	b.log.Info("Watching coins to sell.")
 
 	for {
