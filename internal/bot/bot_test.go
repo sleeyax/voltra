@@ -8,6 +8,7 @@ import (
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database/models"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
 	"github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
 )
 
@@ -165,7 +166,9 @@ func TestBot_buy(t *testing.T) {
 
 	b := New(c, m, db)
 
-	b.buy(ctx)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	b.buy(ctx, &wg)
 
 	orders := db.GetOrders(models.BuyOrder, m.Name())
 	assert.Equal(t, 1, len(orders))
@@ -213,7 +216,9 @@ func TestBot_sell(t *testing.T) {
 
 	b := New(c, m, db)
 
-	b.sell(ctx)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	b.sell(ctx, &wg)
 
 	assert.Equal(t, int64(1), db.CountOrders(models.SellOrder, m.Name()))
 	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
@@ -282,7 +287,9 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 
 	b := New(c, m, db)
 
-	b.sell(ctx)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	b.sell(ctx, &wg)
 
 	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
 	orders := db.GetOrders(models.SellOrder, m.Name())
