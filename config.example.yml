@@ -46,7 +46,7 @@ trading_options:
   recheck_interval: 10
 
   # The amount of time in SECONDS to wait between each try to sell your current coin holdings.
-  sell_timeout: 30
+  sell_timeout: 10
 
   # The minimum difference in PERCENTAGE between the previous and current price of a coin to identify it as volatile.
   change_in_price: 10

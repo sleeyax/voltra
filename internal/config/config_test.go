@@ -23,7 +23,7 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, 3, config.TradingOptions.MaxCoins)
 	assert.Equal(t, 2, config.TradingOptions.TimeDifference)
 	assert.Equal(t, 10, config.TradingOptions.RecheckInterval)
-	assert.Equal(t, 30, config.TradingOptions.SellTimeout)
+	assert.Equal(t, 10, config.TradingOptions.SellTimeout)
 	assert.Equal(t, float64(10), config.TradingOptions.ChangeInPrice)
 	assert.Equal(t, float64(5), config.TradingOptions.StopLoss)
 	assert.Equal(t, 0.8, config.TradingOptions.TakeProfit)
