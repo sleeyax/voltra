@@ -66,6 +66,11 @@ trading_options:
   # - If using BNB for fees, it MUST be enabled in your Binance 'Dashboard' page (checkbox).
   trading_fee: .075
 
+  # The amount of time in MINUTES to wait before buying the same coin again.
+  # This is to prevent buying the same coin multiple times in a short period of time.
+  # Set to 0 to disable.
+  cool_off_delay: 0
+
   # Configuration for trailing stop loss.
   trailing_stop_options:
     # Whether to enable trailing stop loss.

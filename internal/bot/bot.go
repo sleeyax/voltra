@@ -96,6 +96,15 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 					continue
 				}
 
+				// Skip if the coin has been sold very recently (within the cool-off period)
+				if coolOffDelay := time.Duration(b.config.TradingOptions.CoolOffDelay) * time.Minute; coolOffDelay != 0 {
+					lastOrder, ok := b.db.GetLastOrder(models.SellOrder, b.market.Name(), volatileCoin.Symbol)
+					if ok && time.Since(lastOrder.CreatedAt) < coolOffDelay {
+						b.log.Warnf("Already bought %s within the configured cool-off period of %s. Skipping.", volatileCoin.Symbol, coolOffDelay)
+						continue
+					}
+				}
+
 				// Determine the correct volume to buy based on the configured quantity.
 				volume, err := b.convertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
 				if err != nil {

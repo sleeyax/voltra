@@ -81,6 +81,11 @@ type TradingOptions struct {
 	// - If using BNB for fees, it MUST be enabled in your Binance 'Dashboard' page (checkbox).
 	TradingFee float64 `mapstructure:"trading_fee"`
 
+	// The amount of time in MINUTES to wait before buying the same coin again.
+	// This is to prevent buying the same coin multiple times in a short period of time.
+	// Set to 0 to disable.
+	CoolOffDelay int `mapstructure:"cool_off_delay"`
+
 	// Configuration for trailing stop loss.
 	TrailingStopOptions TrailingStopOptions `mapstructure:"trailing_stop_options"`
 

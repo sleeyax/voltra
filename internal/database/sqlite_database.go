@@ -61,3 +61,11 @@ func (d *SqliteDatabase) GetCache(symbol string) (models.Cache, bool) {
 	}
 	return cache, true
 }
+
+func (d *SqliteDatabase) GetLastOrder(orderType models.OrderType, market, symbol string) (models.Order, bool) {
+	var order models.Order
+	if err := d.db.Where("type = ? AND market = ? AND symbol = ?", orderType, market, symbol).Last(&order).Error; err != nil {
+		return order, false
+	}
+	return order, true
+}

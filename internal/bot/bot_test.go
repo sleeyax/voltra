@@ -117,6 +117,10 @@ func (m *mockDatabase) GetCache(_ string) (models.Cache, bool) {
 	return models.Cache{}, false
 }
 
+func (m *mockDatabase) GetLastOrder(orderType models.OrderType, market, symbol string) (models.Order, bool) {
+	panic("implement me")
+}
+
 func TestBot_buy(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
