@@ -28,20 +28,20 @@ type Order struct {
 	// Optional field to store the take profit.
 	// This field may be updated when trailing stop loss is used.
 	// This field is only set when the type is a buy order.
-	TakeProfit float64
+	TakeProfit *float64
 
 	// Optional field to store the stop loss.
 	// This field may be updated when trailing stop loss is used.
 	// This field is only set when the type is a buy order.
-	StopLoss float64
+	StopLoss *float64
 
 	// Optional field for the estimated profit.
 	// This field is only set when the type is a sell order.
-	PriceChangePercentage float64
+	PriceChangePercentage *float64
 
 	// Optional field for the estimated profit or loss.
 	// This field is only set when the type is a sell order.
-	EstimatedProfitLoss float64
+	EstimatedProfitLoss *float64
 
 	// Whether the order is a dummy/fake order, created in test mode.
 	IsTestMode bool

@@ -4,7 +4,7 @@ import "time"
 
 type Order struct {
 	OrderID         int64
-	Symbol          string
 	TransactionTime time.Time
+	Symbol          string
 	Price           float64
 }

@@ -213,8 +213,8 @@ func TestBot_sell(t *testing.T) {
 		Market:     m.Name(),
 		Type:       models.BuyOrder,
 		Volume:     11.6,
-		TakeProfit: c.TradingOptions.TakeProfit,
-		StopLoss:   c.TradingOptions.StopLoss,
+		TakeProfit: &c.TradingOptions.TakeProfit,
+		StopLoss:   &c.TradingOptions.StopLoss,
 		IsTestMode: true,
 	})
 
@@ -284,8 +284,8 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 		Market:     m.Name(),
 		Type:       models.BuyOrder,
 		Volume:     0.000909,
-		TakeProfit: c.TradingOptions.TakeProfit,
-		StopLoss:   c.TradingOptions.StopLoss,
+		TakeProfit: &c.TradingOptions.TakeProfit,
+		StopLoss:   &c.TradingOptions.StopLoss,
 		IsTestMode: true,
 	})
 
@@ -298,7 +298,8 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 	assert.Equal(t, int64(0), db.CountOrders(models.BuyOrder, m.Name()))
 	orders := db.GetOrders(models.SellOrder, m.Name())
 	assert.Equal(t, 1, len(orders))
-	assert.Equal(t, float64(-10), orders[0].PriceChangePercentage)
+	assert.NotNil(t, orders[0].PriceChangePercentage)
+	assert.Equal(t, float64(-10), *orders[0].PriceChangePercentage)
 	assert.Equal(t, float64(9000), orders[0].Price)
 }
 

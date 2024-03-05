@@ -125,8 +125,8 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 					Market:     b.market.Name(),
 					Type:       models.BuyOrder,
 					Volume:     volume,
-					TakeProfit: b.config.TradingOptions.TakeProfit,
-					StopLoss:   b.config.TradingOptions.StopLoss,
+					TakeProfit: &b.config.TradingOptions.TakeProfit,
+					StopLoss:   &b.config.TradingOptions.StopLoss,
 				}
 
 				// Pretend to buy the coin and save the order if test mode is enabled.
@@ -174,8 +174,8 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 			orders := b.db.GetOrders(models.BuyOrder, b.market.Name())
 			for _, boughtCoin := range orders {
-				takeProfit := boughtCoin.Price + (boughtCoin.Price*boughtCoin.TakeProfit)/100
-				stopLoss := boughtCoin.Price + (boughtCoin.Price*(-1*math.Abs(boughtCoin.StopLoss)))/100
+				takeProfit := boughtCoin.Price + (boughtCoin.Price*(*boughtCoin.TakeProfit))/100
+				stopLoss := boughtCoin.Price + (boughtCoin.Price*(-1*math.Abs(*boughtCoin.StopLoss)))/100
 				lastPrice := coins[boughtCoin.Symbol].Price
 				buyPrice := boughtCoin.Price
 				priceChangePercentage := (lastPrice - buyPrice) / buyPrice * 100
@@ -183,9 +183,11 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
 				if b.config.TradingOptions.TrailingStopOptions.Enable && lastPrice >= takeProfit {
 					trailingStopOptions := b.config.TradingOptions.TrailingStopOptions
-					boughtCoin.StopLoss = boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
-					boughtCoin.TakeProfit = priceChangePercentage + trailingStopOptions.TrailingTakeProfit
-					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, boughtCoin.StopLoss, boughtCoin.TakeProfit)
+					sl := *boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
+					tp := priceChangePercentage + trailingStopOptions.TrailingTakeProfit
+					boughtCoin.StopLoss = &sl
+					boughtCoin.TakeProfit = &tp
+					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, *boughtCoin.StopLoss, *boughtCoin.TakeProfit)
 					b.db.SaveOrder(boughtCoin)
 					continue
 				}
@@ -227,8 +229,8 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						Market:                b.market.Name(),
 						Type:                  models.SellOrder,
 						Volume:                boughtCoin.Volume,
-						PriceChangePercentage: priceChangePercentage,
-						EstimatedProfitLoss:   estimatedProfitLoss,
+						PriceChangePercentage: &priceChangePercentage,
+						EstimatedProfitLoss:   &estimatedProfitLoss,
 					}
 
 					if b.config.EnableTestMode {
