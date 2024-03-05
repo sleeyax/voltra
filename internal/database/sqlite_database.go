@@ -1,9 +1,14 @@
 package database
 
 import (
+	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
 	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+	"os"
+	"time"
 )
 
 type SqliteDatabase struct {
@@ -12,8 +17,25 @@ type SqliteDatabase struct {
 
 var _ Database = (*SqliteDatabase)(nil)
 
-func NewSqliteDatabase(dsn string) *SqliteDatabase {
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabase {
+	customLoggerConfig := logger.Config{
+		SlowThreshold:             time.Second * 1,
+		LogLevel:                  logger.Info,
+		IgnoreRecordNotFoundError: true,
+		ParameterizedQueries:      options.EnableStructuredLogging,
+		Colorful:                  !options.EnableStructuredLogging,
+	}
+
+	if !options.Enable || options.EnableStructuredLogging {
+		customLoggerConfig.LogLevel = logger.Silent
+	}
+
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
+		Logger: logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			customLoggerConfig,
+		),
+	})
 	if err != nil {
 		panic("failed to connect to the local database")
 	}
