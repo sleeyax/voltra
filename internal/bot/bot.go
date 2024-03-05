@@ -88,7 +88,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
 			b.log.Infof("Found %d volatile coins.", len(volatileCoins))
 			for _, volatileCoin := range volatileCoins {
-				b.log.Infof("Coin %s has gained %f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
+				b.log.Infof("Coin %s has gained %.2f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
 				// Skip if the coin has already been bought.
 				if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
@@ -112,7 +112,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 					continue
 				}
 
-				b.log.Infow(fmt.Sprintf("Trading %f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
+				b.log.Infow(fmt.Sprintf("Buying %.2f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
 					"volume", volume,
 					"pair_with", b.config.TradingOptions.PairWith,
 					"symbol", volatileCoin.Symbol,
@@ -187,7 +187,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					tp := priceChangePercentage + trailingStopOptions.TrailingTakeProfit
 					boughtCoin.StopLoss = &sl
 					boughtCoin.TakeProfit = &tp
-					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %f and trading profit (TP) to %f.", boughtCoin.Symbol, *boughtCoin.StopLoss, *boughtCoin.TakeProfit)
+					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %.2f and trading profit (TP) to %.2f.", boughtCoin.Symbol, sl, tp)
 					b.db.SaveOrder(boughtCoin)
 					continue
 				}
@@ -204,7 +204,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					estimatedProfitLoss := (lastPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFee * 2))
 					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFee * 2)) / 100
 					msg := fmt.Sprintf(
-						"Selling %f %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
+						"Selling %.2f %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
 						boughtCoin.Volume,
 						boughtCoin.Symbol,
 						profitOrLossText,
