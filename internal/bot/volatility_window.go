@@ -40,8 +40,8 @@ func (h *VolatilityWindow) AddRecord(coins market.CoinMap) {
 	if l := h.Size(); l == h.maxLength && l != UnlimitedVolatilityWindowLength {
 		// remove everything except the last record
 		// h.records = h.records[h.maxLength-1:]
-		h.records = nil
-		h.volatileCoins = nil
+		h.records = make([]VolatilityWindowRecord, 0)
+		h.volatileCoins = make(market.VolatileCoins)
 	}
 	h.records = append(h.records, VolatilityWindowRecord{time: time.Now(), coins: coins})
 }
