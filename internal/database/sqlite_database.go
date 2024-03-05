@@ -52,13 +52,13 @@ func (d *SqliteDatabase) SaveOrder(order models.Order) {
 
 func (d *SqliteDatabase) HasOrder(orderType models.OrderType, market, symbol string) bool {
 	var count int64
-	d.db.Where("type = ? AND market = ? AND symbol = ?", orderType, market, symbol).Count(&count)
+	d.db.Model(&models.Order{}).Where("type = ? AND market = ? AND symbol = ?", orderType, market, symbol).Count(&count)
 	return count > 0
 }
 
 func (d *SqliteDatabase) CountOrders(orderType models.OrderType, market string) int64 {
 	var count int64
-	d.db.Where("type = ? AND market = ?", orderType, market).Count(&count)
+	d.db.Model(&models.Order{}).Where("type = ? AND market = ?", orderType, market).Count(&count)
 	return count
 }
 
