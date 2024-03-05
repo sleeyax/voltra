@@ -17,8 +17,25 @@ func createLogger(options config.LoggingOptions) *zap.SugaredLogger {
 	} else {
 		loggerConfig := zap.NewDevelopmentConfig()
 		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		loggerConfig.Level.SetLevel(toZapLogLevel(options.LogLevel))
 		logger, _ = loggerConfig.Build()
 	}
 
 	return logger.Sugar()
+}
+
+// Converts a config.LogLevel to a zapcore.Level.
+func toZapLogLevel(level config.LogLevel) zapcore.Level {
+	switch level {
+	case config.DebugLevel:
+		return zapcore.DebugLevel
+	case config.InfoLevel:
+		return zapcore.InfoLevel
+	case config.WarnLevel:
+		return zapcore.WarnLevel
+	case config.ErrorLevel:
+		return zapcore.ErrorLevel
+	default:
+		return zapcore.InfoLevel
+	}
 }

@@ -13,6 +13,10 @@ logging_options:
   # Recommended to set this to true in production and false in development.
   enable_structured_logging: false
 
+  # Valid options are: debug, info, warning, error.
+  # Recommended to set this to info in production and debug in development.
+  log_level: info
+
 # Configuration for supported cryptocurrency exchanges.
 markets:
   binance:

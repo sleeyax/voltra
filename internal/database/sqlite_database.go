@@ -20,7 +20,6 @@ var _ Database = (*SqliteDatabase)(nil)
 func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabase {
 	customLoggerConfig := logger.Config{
 		SlowThreshold:             time.Second * 1,
-		LogLevel:                  logger.Info,
 		IgnoreRecordNotFoundError: true,
 		ParameterizedQueries:      options.EnableStructuredLogging,
 		Colorful:                  !options.EnableStructuredLogging,
@@ -28,6 +27,8 @@ func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabas
 
 	if !options.Enable || options.EnableStructuredLogging {
 		customLoggerConfig.LogLevel = logger.Silent
+	} else {
+		customLoggerConfig.LogLevel = toGORMLogLevel(options.LogLevel)
 	}
 
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
@@ -44,6 +45,22 @@ func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabas
 	_ = db.AutoMigrate(&models.Cache{})
 
 	return &SqliteDatabase{db: db}
+}
+
+// Converts a config.LogLevel to a gorm logger.LogLevel.
+func toGORMLogLevel(level config.LogLevel) logger.LogLevel {
+	switch level {
+	case config.WarnLevel:
+		return logger.Warn
+	case config.ErrorLevel:
+		return logger.Error
+	case config.DebugLevel:
+		fallthrough
+	case config.InfoLevel:
+		fallthrough
+	default:
+		return logger.Info
+	}
 }
 
 func (d *SqliteDatabase) SaveOrder(order models.Order) {

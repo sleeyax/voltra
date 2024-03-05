@@ -1,5 +1,14 @@
 package config
 
+type LogLevel string
+
+const (
+	DebugLevel LogLevel = "debug"
+	InfoLevel  LogLevel = "info"
+	WarnLevel  LogLevel = "warning"
+	ErrorLevel LogLevel = "error"
+)
+
 type Configuration struct {
 	// Whether to perform fake or real trades.
 	// Setting this to false will use REAL funds, use at your own risk!
@@ -24,6 +33,10 @@ type LoggingOptions struct {
 	// Set this to true if you want to use the structured logging format.
 	// Recommended to set this to true in production and false in development.
 	EnableStructuredLogging bool `mapstructure:"enable_structured_logging"`
+
+	// The minimum log level.
+	// Recommended to set this to `info` in production and `debug` in development.
+	LogLevel LogLevel `mapstructure:"log_level"`
 }
 
 type Markets struct {
