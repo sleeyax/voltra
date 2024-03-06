@@ -17,6 +17,11 @@ logging_options:
   # Recommended to set this to info in production and debug in development.
   log_level: info
 
+  # Valid options are: debug, info, warning, error, silent.
+  # Recommended to set this to silent in all environments and only set this to debug to log all executed SQL statements in development when necessary.
+  # Defaults to `log_level` if not set.
+  database_log_level: silent
+
 # Configuration for supported cryptocurrency exchanges.
 markets:
   binance:

@@ -3,10 +3,11 @@ package config
 type LogLevel string
 
 const (
-	DebugLevel LogLevel = "debug"
-	InfoLevel  LogLevel = "info"
-	WarnLevel  LogLevel = "warning"
-	ErrorLevel LogLevel = "error"
+	DebugLevel  LogLevel = "debug"
+	InfoLevel   LogLevel = "info"
+	WarnLevel   LogLevel = "warning"
+	ErrorLevel  LogLevel = "error"
+	SilentLevel LogLevel = "silent"
 )
 
 type Configuration struct {
@@ -37,6 +38,11 @@ type LoggingOptions struct {
 	// The minimum log level.
 	// Recommended to set this to `info` in production and `debug` in development.
 	LogLevel LogLevel `mapstructure:"log_level"`
+
+	// The minimum database log level.
+	// Recommended to set this to `silent` in all environments and only set this to `debug` to log all executed SQL statements in development when necessary.
+	// Defaults to LogLevel if not set.
+	DatabaseLogLevel LogLevel `mapstructure:"database_log_level"`
 }
 
 type Markets struct {

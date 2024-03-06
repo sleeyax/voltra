@@ -14,8 +14,8 @@ func TestLoad(t *testing.T) {
 
 	assert.Equal(t, true, config.LoggingOptions.Enable)
 	assert.Equal(t, false, config.LoggingOptions.EnableStructuredLogging)
-	var expectedLogLevel LogLevel = "info"
-	assert.Equal(t, expectedLogLevel, config.LoggingOptions.LogLevel)
+	assert.Equal(t, InfoLevel, config.LoggingOptions.LogLevel)
+	assert.Equal(t, SilentLevel, config.LoggingOptions.DatabaseLogLevel)
 
 	assert.Equal(t, "PASTE_YOUR_ACCESS_KEY_HERE", config.Markets.Binance.AccessKey)
 	assert.Equal(t, "PASTE_YOUR_SECRET_KEY_HERE", config.Markets.Binance.SecretKey)

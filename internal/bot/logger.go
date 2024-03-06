@@ -10,14 +10,20 @@ import (
 func createLogger(options config.LoggingOptions) *zap.SugaredLogger {
 	var logger *zap.Logger
 
-	if !options.Enable {
+	if !options.Enable || options.LogLevel == config.SilentLevel {
 		logger = zap.NewNop()
 	} else if options.EnableStructuredLogging {
-		logger, _ = zap.NewProduction()
+		loggerConfig := zap.NewProductionConfig()
+		if logLevel := toZapLogLevel(options.LogLevel); logLevel != zapcore.InvalidLevel {
+			loggerConfig.Level.SetLevel(logLevel)
+		}
+		logger, _ = loggerConfig.Build()
 	} else {
 		loggerConfig := zap.NewDevelopmentConfig()
 		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		loggerConfig.Level.SetLevel(toZapLogLevel(options.LogLevel))
+		if logLevel := toZapLogLevel(options.LogLevel); logLevel != zapcore.InvalidLevel {
+			loggerConfig.Level.SetLevel(logLevel)
+		}
 		logger, _ = loggerConfig.Build()
 	}
 
@@ -36,6 +42,6 @@ func toZapLogLevel(level config.LogLevel) zapcore.Level {
 	case config.ErrorLevel:
 		return zapcore.ErrorLevel
 	default:
-		return zapcore.InfoLevel
+		return zapcore.InvalidLevel
 	}
 }

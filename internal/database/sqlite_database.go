@@ -18,17 +18,21 @@ type SqliteDatabase struct {
 var _ Database = (*SqliteDatabase)(nil)
 
 func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabase {
+	var logLevel config.LogLevel
+	if !options.Enable || options.EnableStructuredLogging {
+		logLevel = config.SilentLevel
+	} else if options.DatabaseLogLevel != "" {
+		logLevel = options.DatabaseLogLevel
+	} else {
+		logLevel = options.LogLevel
+	}
+
 	customLoggerConfig := logger.Config{
 		SlowThreshold:             time.Second * 1,
 		IgnoreRecordNotFoundError: true,
 		ParameterizedQueries:      options.EnableStructuredLogging,
 		Colorful:                  !options.EnableStructuredLogging,
-	}
-
-	if !options.Enable || options.EnableStructuredLogging {
-		customLoggerConfig.LogLevel = logger.Silent
-	} else {
-		customLoggerConfig.LogLevel = toGORMLogLevel(options.LogLevel)
+		LogLevel:                  toGORMLogLevel(logLevel),
 	}
 
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
@@ -54,6 +58,8 @@ func toGORMLogLevel(level config.LogLevel) logger.LogLevel {
 		return logger.Warn
 	case config.ErrorLevel:
 		return logger.Error
+	case config.SilentLevel:
+		return logger.Silent
 	case config.DebugLevel:
 		fallthrough
 	case config.InfoLevel:
