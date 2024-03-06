@@ -20,22 +20,34 @@ type Bot struct {
 	db               database.Database
 	volatilityWindow *VolatilityWindow
 	config           *config.Configuration
-	log              *zap.SugaredLogger
+	botLog           *zap.SugaredLogger
+	buyLog           *zap.SugaredLogger
+	sellLog          *zap.SugaredLogger
 }
 
 func New(config *config.Configuration, market market.Market, db database.Database) *Bot {
-	sugar := createLogger(config.LoggingOptions)
-	window := NewVolatilityWindow(config.TradingOptions.RecheckInterval)
-	return &Bot{market: market, volatilityWindow: window, config: config, log: sugar, db: db}
+	sugaredLogger := createLogger(config.LoggingOptions).Named("bot")
+	return &Bot{
+		market:           market,
+		db:               db,
+		volatilityWindow: NewVolatilityWindow(config.TradingOptions.RecheckInterval),
+		config:           config,
+		botLog:           sugaredLogger,
+		buyLog:           sugaredLogger.Named("buy"),
+		sellLog:          sugaredLogger.Named("sell"),
+	}
 }
 
-func (b *Bot) Close() error {
-	return b.log.Sync()
+func (b *Bot) flushLogs() {
+	_ = b.botLog.Sync()
+	_ = b.buyLog.Sync()
+	_ = b.sellLog.Sync()
 }
 
 // Start starts monitoring the market for price changes.
 func (b *Bot) Start(ctx context.Context) {
-	b.log.Info("Bot started.")
+	defer b.flushLogs()
+	b.botLog.Info("Bot started.")
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -46,12 +58,12 @@ func (b *Bot) Start(ctx context.Context) {
 	// Wait for both buy and sell goroutines to finish.
 	wg.Wait()
 
-	b.log.Info("Bot stopped.")
+	b.botLog.Info("Bot stopped.")
 }
 
 func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	b.log.Debug("Watching coins to buy.")
+	b.buyLog.Debug("Watching coins to buy.")
 
 	if err := b.updateLatestCoins(ctx); err != nil {
 		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
@@ -60,7 +72,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ctx.Done():
-			b.log.Debug("Bot stopped buying coins.")
+			b.buyLog.Debug("Bot stopped buying coins.")
 			return
 		default:
 			// Wait until the next recheck interval.
@@ -68,31 +80,31 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 			delta := utils.CalculateTimeDuration(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
 			if time.Since(lastRecord.time) < delta {
 				interval := delta - time.Since(lastRecord.time)
-				b.log.Debugf("Waiting %s.", interval.Round(time.Second))
+				b.buyLog.Debugf("Waiting %s.", interval.Round(time.Second))
 				time.Sleep(interval)
 			}
 
 			// Fetch the latest coins again after the waiting period.
 			if err := b.updateLatestCoins(ctx); err != nil {
-				b.log.Errorf("Failed to update latest coins: %s.", err)
+				b.buyLog.Errorf("Failed to update latest coins: %s.", err)
 				continue
 			}
 
 			// Skip if the max amount of buy orders has been reached.
 			if maxBuyOrders := int64(b.config.TradingOptions.MaxCoins); maxBuyOrders != 0 && b.db.CountOrders(models.BuyOrder, b.market.Name()) >= maxBuyOrders {
-				b.log.Warnf("Max amount of buy orders reached.")
+				b.buyLog.Warnf("Max amount of buy orders reached.")
 				continue
 			}
 
 			// Identify volatile coins in the current time window and trade them if any are found.
 			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
-			b.log.Infof("Found %d volatile coins.", len(volatileCoins))
+			b.buyLog.Infof("Found %d volatile coins.", len(volatileCoins))
 			for _, volatileCoin := range volatileCoins {
-				b.log.Infof("Coin %s has gained %.2f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
+				b.buyLog.Infof("Coin %s has gained %.2f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
 				// Skip if the coin has already been bought.
 				if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
-					b.log.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
+					b.buyLog.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
 					continue
 				}
 
@@ -100,7 +112,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 				if coolOffDelay := time.Duration(b.config.TradingOptions.CoolOffDelay) * time.Minute; coolOffDelay != 0 {
 					lastOrder, ok := b.db.GetLastOrder(models.SellOrder, b.market.Name(), volatileCoin.Symbol)
 					if ok && time.Since(lastOrder.CreatedAt) < coolOffDelay {
-						b.log.Warnf("Already bought %s within the configured cool-off period of %s. Skipping.", volatileCoin.Symbol, coolOffDelay)
+						b.buyLog.Warnf("Already bought %s within the configured cool-off period of %s. Skipping.", volatileCoin.Symbol, coolOffDelay)
 						continue
 					}
 				}
@@ -108,11 +120,11 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 				// Determine the correct volume to buy based on the configured quantity.
 				volume, err := b.convertVolume(ctx, b.config.TradingOptions.Quantity, volatileCoin)
 				if err != nil {
-					b.log.Errorf("Failed to convert volume. Skipping the trade: %s", err)
+					b.buyLog.Errorf("Failed to convert volume. Skipping the trade: %s", err)
 					continue
 				}
 
-				b.log.Infow(fmt.Sprintf("Buying %.2f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
+				b.buyLog.Infow(fmt.Sprintf("Buying %.2f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
 					"volume", volume,
 					"pair_with", b.config.TradingOptions.PairWith,
 					"symbol", volatileCoin.Symbol,
@@ -142,7 +154,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 					// Otherwise, buy the coin and save the real order.
 					buyOrder, err := b.market.Buy(ctx, volatileCoin.Symbol, volume)
 					if err != nil {
-						b.log.Errorf("Failed to buy %s: %s.", volatileCoin.Symbol, err)
+						b.buyLog.Errorf("Failed to buy %s: %s.", volatileCoin.Symbol, err)
 						continue
 					}
 
@@ -157,18 +169,18 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 
 func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	b.log.Debug("Watching coins to sell.")
+	b.sellLog.Debug("Watching coins to sell.")
 
 	for {
 		select {
 		case <-ctx.Done():
-			b.log.Debug("Bot stopped selling coins.")
+			b.sellLog.Debug("Bot stopped selling coins.")
 			return
 		default:
 
 			coins, err := b.market.GetCoins(ctx)
 			if err != nil {
-				b.log.Errorf("Failed to fetch coins: %s.", err)
+				b.sellLog.Errorf("Failed to fetch coins: %s.", err)
 				continue
 			}
 
@@ -187,7 +199,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					tp := priceChangePercentage + trailingStopOptions.TrailingTakeProfit
 					boughtCoin.StopLoss = &sl
 					boughtCoin.TakeProfit = &tp
-					b.log.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %.2f and trading profit (TP) to %.2f.", boughtCoin.Symbol, sl, tp)
+					b.sellLog.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %.2f and trading profit (TP) to %.2f.", boughtCoin.Symbol, sl, tp)
 					b.db.SaveOrder(boughtCoin)
 					continue
 				}
@@ -214,7 +226,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						strconv.FormatFloat(priceChangePercentage-(b.config.TradingOptions.TradingFee*2), 'f', 2, 64),
 					)
 
-					b.log.Infow(
+					b.sellLog.Infow(
 						msg,
 						"symbol", boughtCoin.Symbol,
 						"buyPrice", buyPrice,
@@ -244,7 +256,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					} else {
 						sellOrder, err := b.market.Sell(ctx, boughtCoin.Symbol, boughtCoin.Volume)
 						if err != nil {
-							b.log.Errorf("Failed to sell %s: %s.", boughtCoin.Symbol, err)
+							b.sellLog.Errorf("Failed to sell %s: %s.", boughtCoin.Symbol, err)
 							continue
 						}
 
@@ -263,7 +275,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 // updateLatestCoins fetches the latest coins from the market and appends them to the volatilityWindow.
 func (b *Bot) updateLatestCoins(ctx context.Context) error {
-	b.log.Debug("Fetching latest coins.")
+	b.botLog.Debug("Fetching latest coins.")
 
 	coins, err := b.market.GetCoins(ctx)
 	if err != nil {
