@@ -51,7 +51,7 @@ func (b *Bot) Start(ctx context.Context) {
 
 func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	b.log.Info("Watching coins to buy.")
+	b.log.Debug("Watching coins to buy.")
 
 	if err := b.updateLatestCoins(ctx); err != nil {
 		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
@@ -60,7 +60,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ctx.Done():
-			b.log.Info("Bot stopped buying coins.")
+			b.log.Debug("Bot stopped buying coins.")
 			return
 		default:
 			// Wait until the next recheck interval.
@@ -68,7 +68,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 			delta := utils.CalculateTimeDuration(b.config.TradingOptions.TimeDifference, b.config.TradingOptions.RecheckInterval)
 			if time.Since(lastRecord.time) < delta {
 				interval := delta - time.Since(lastRecord.time)
-				b.log.Infof("Waiting %s.", interval.Round(time.Second))
+				b.log.Debugf("Waiting %s.", interval.Round(time.Second))
 				time.Sleep(interval)
 			}
 
@@ -157,12 +157,12 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 
 func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	b.log.Info("Watching coins to sell.")
+	b.log.Debug("Watching coins to sell.")
 
 	for {
 		select {
 		case <-ctx.Done():
-			b.log.Info("Bot stopped selling coins.")
+			b.log.Debug("Bot stopped selling coins.")
 			return
 		default:
 
@@ -263,7 +263,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 // updateLatestCoins fetches the latest coins from the market and appends them to the volatilityWindow.
 func (b *Bot) updateLatestCoins(ctx context.Context) error {
-	b.log.Info("Fetching latest coins.")
+	b.log.Debug("Fetching latest coins.")
 
 	coins, err := b.market.GetCoins(ctx)
 	if err != nil {
