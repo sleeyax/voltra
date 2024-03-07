@@ -192,7 +192,7 @@ func TestBot_sell(t *testing.T) {
 			Quantity:      15,
 			TakeProfit:    0.1,
 			StopLoss:      5,
-			TradingFee:    0.075,
+			TradingFee:    0.15,
 		},
 	}
 
@@ -240,7 +240,7 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 			Quantity:      10,
 			TakeProfit:    10,
 			StopLoss:      5,
-			TradingFee:    0.075,
+			TradingFee:    0.15,
 			TrailingStopOptions: config.TrailingStopOptions{
 				Enable:             true,
 				TrailingStopLoss:   1,
