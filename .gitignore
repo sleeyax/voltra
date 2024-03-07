@@ -1,5 +1,6 @@
 data/
 *.y*ml
 !config.example.yml
+!.github/**/*.yml
 .idea/
 *.db
