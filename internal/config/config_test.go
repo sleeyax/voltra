@@ -29,7 +29,8 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, float64(10), config.TradingOptions.ChangeInPrice)
 	assert.Equal(t, float64(5), config.TradingOptions.StopLoss)
 	assert.Equal(t, 0.8, config.TradingOptions.TakeProfit)
-	assert.Equal(t, 0.075, config.TradingOptions.TradingFee)
+	assert.Equal(t, 0.075, config.TradingOptions.TradingFeeMaker)
+	assert.Equal(t, 0.075, config.TradingOptions.TradingFeeTaker)
 	assert.Equal(t, 0, config.TradingOptions.CoolOffDelay)
 
 	assert.Equal(t, true, config.TradingOptions.TrailingStopOptions.Enable)

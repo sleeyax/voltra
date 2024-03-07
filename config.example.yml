@@ -68,11 +68,17 @@ trading_options:
   # For example, if you set this to 5, the bot will sell the coin if it rises 5% above the price at which it was bought.
   take_profit: .8
 
-  # Trading fee in % per trade.
+  # Trading fee for the maker in % per trade.
   #
   # Binance:
   # - If using BNB for fees, set this to 0.075 and make sure have enough BNB in your account.
-  trading_fee: 0.075
+  trading_fee_maker: 0.075
+
+  # Trading fee for the taker in % per trade.
+  #
+  # Binance:
+  # - If using BNB for fees, set this to 0.075 and make sure have enough BNB in your account.
+  trading_fee_taker: 0.075
 
   # The amount of time in MINUTES to wait before buying the same coin again.
   # This is to prevent buying the same coin multiple times in a short period of time.

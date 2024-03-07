@@ -93,12 +93,17 @@ type TradingOptions struct {
 	// For example, if you set this to 5, the bot will sell the coin if it rises 5% above the price at which it was bought.
 	TakeProfit float64 `mapstructure:"take_profit"`
 
-	// Trading fee in % per trade.
+	// Trading fee for the maker in % per trade.
 	//
 	// Binance:
-	// - If using 0.75% (using BNB for fees) you must have BNB in your account to cover trading fees.
-	// - If using BNB for fees, it MUST be enabled in your Binance 'Dashboard' page (checkbox).
-	TradingFee float64 `mapstructure:"trading_fee"`
+	//  - If using BNB for fees, set this to 0.075 and make sure have enough BNB in your account.
+	TradingFeeMaker float64 `mapstructure:"trading_fee_maker"`
+
+	// Trading fee for the taker in % per trade.
+	//
+	// Binance:
+	//  - If using BNB for fees, set this to 0.075 and make sure have enough BNB in your account.
+	TradingFeeTaker float64 `mapstructure:"trading_fee_taker"`
 
 	// The amount of time in MINUTES to wait before buying the same coin again.
 	// This is to prevent buying the same coin multiple times in a short period of time.
