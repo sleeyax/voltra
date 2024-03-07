@@ -177,7 +177,6 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 			b.sellLog.Debug("Bot stopped selling coins.")
 			return
 		default:
-
 			coins, err := b.market.GetCoins(ctx)
 			if err != nil {
 				b.sellLog.Errorf("Failed to fetch coins: %s.", err)
@@ -188,12 +187,12 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 			for _, boughtCoin := range orders {
 				takeProfit := boughtCoin.Price + (boughtCoin.Price*(*boughtCoin.TakeProfit))/100
 				stopLoss := boughtCoin.Price + (boughtCoin.Price*(-1*math.Abs(*boughtCoin.StopLoss)))/100
-				lastPrice := coins[boughtCoin.Symbol].Price
+				currentPrice := coins[boughtCoin.Symbol].Price
 				buyPrice := boughtCoin.Price
-				priceChangePercentage := (lastPrice - buyPrice) / buyPrice * 100
+				priceChangePercentage := (currentPrice - buyPrice) / buyPrice * 100
 
 				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
-				if b.config.TradingOptions.TrailingStopOptions.Enable && lastPrice >= takeProfit {
+				if b.config.TradingOptions.TrailingStopOptions.Enable && currentPrice >= takeProfit {
 					trailingStopOptions := b.config.TradingOptions.TrailingStopOptions
 					sl := *boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
 					tp := priceChangePercentage + trailingStopOptions.TrailingTakeProfit
@@ -204,8 +203,8 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					continue
 				}
 
-				// Verify that the price is below the stop loss or above take profit and sell the boughtCoin.
-				if lastPrice <= stopLoss || lastPrice >= takeProfit {
+				// If the price of the coin is below the stop loss or above take profit then sell it.
+				if currentPrice <= stopLoss || currentPrice >= takeProfit {
 					var profitOrLossText string
 					if priceChangePercentage >= 0 {
 						profitOrLossText = "profit"
@@ -213,7 +212,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						profitOrLossText = "loss"
 					}
 
-					estimatedProfitLoss := (lastPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFee))
+					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFee))
 					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFee)) / 100
 					msg := fmt.Sprintf(
 						"Selling %.2f %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
@@ -230,7 +229,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						msg,
 						"symbol", boughtCoin.Symbol,
 						"buyPrice", buyPrice,
-						"currentPrice", lastPrice,
+						"currentPrice", currentPrice,
 						"priceChangePercentage", priceChangePercentage,
 						"tradingFee", b.config.TradingOptions.TradingFee,
 						"quantity", b.config.TradingOptions.Quantity,
@@ -250,7 +249,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 							OrderID:         0,
 							Symbol:          boughtCoin.Symbol,
 							TransactionTime: time.Now(),
-							Price:           lastPrice,
+							Price:           currentPrice,
 						}
 						order.IsTestMode = true
 					} else {
@@ -265,6 +264,15 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 					b.db.SaveOrder(order)
 					b.db.DeleteOrder(boughtCoin)
+				} else {
+					b.sellLog.Infow(
+						fmt.Sprintf("Price of %s is %.2f%% away from the buy price. Hodl.", boughtCoin.Symbol, priceChangePercentage),
+						"symbol", boughtCoin.Symbol,
+						"buyPrice", buyPrice,
+						"currentPrice", currentPrice,
+						"takeProfit", takeProfit,
+						"stopLoss", stopLoss,
+					)
 				}
 			}
 
