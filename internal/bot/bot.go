@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const significantPriceChangeThreshold = 0.8
+
 type Bot struct {
 	market           market.Market
 	db               database.Database
@@ -194,12 +196,31 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
 				if b.config.TradingOptions.TrailingStopOptions.Enable && currentPrice >= takeProfit {
 					trailingStopOptions := b.config.TradingOptions.TrailingStopOptions
-					sl := *boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
+
+					// Calculate trailing stop loss and take profit.
 					tp := priceChangePercentage + trailingStopOptions.TrailingTakeProfit
+					var sl float64
+					if priceChangePercentage >= significantPriceChangeThreshold {
+						// If the price has changed much we make the stop loss trail closely match the take profit.
+						// This way we don't lose this increase in price if it falls back.
+						sl = tp - trailingStopOptions.TrailingStopLoss
+					} else {
+						// If the price has changed little we make the stop loss trail loosely match the take profit.
+						// This way we don't get locked out of the trade prematurely.
+						sl = *boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
+					}
+					if sl <= 0 {
+						// Revert to the current stop loss if the calculated stop loss ends up being negative.
+						sl = *boughtCoin.StopLoss
+					}
+
 					boughtCoin.StopLoss = &sl
 					boughtCoin.TakeProfit = &tp
+
 					b.sellLog.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %.2f and trading profit (TP) to %.2f.", boughtCoin.Symbol, sl, tp)
+
 					b.db.SaveOrder(boughtCoin)
+
 					continue
 				}
 

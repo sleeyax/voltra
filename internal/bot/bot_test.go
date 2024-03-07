@@ -260,12 +260,6 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 	m.AddCoins(market.CoinMap{
 		"BTC": market.Coin{
 			Symbol: "BTC",
-			Price:  11_100,
-		},
-	})
-	m.AddCoins(market.CoinMap{
-		"BTC": market.Coin{
-			Symbol: "BTC",
 			Price:  11_050,
 		},
 	})
