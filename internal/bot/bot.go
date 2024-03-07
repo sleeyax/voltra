@@ -90,12 +90,6 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 				continue
 			}
 
-			// Skip if the max amount of buy orders has been reached.
-			if maxBuyOrders := int64(b.config.TradingOptions.MaxCoins); maxBuyOrders != 0 && b.db.CountOrders(models.BuyOrder, b.market.Name()) >= maxBuyOrders {
-				b.buyLog.Warnf("Max amount of buy orders reached.")
-				continue
-			}
-
 			// Identify volatile coins in the current time window and trade them if any are found.
 			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
 			b.buyLog.Infof("Found %d volatile coins.", len(volatileCoins))
@@ -105,6 +99,12 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 				// Skip if the coin has already been bought.
 				if b.db.HasOrder(models.BuyOrder, b.market.Name(), volatileCoin.Symbol) {
 					b.buyLog.Warnf("Already bought %s. Skipping.", volatileCoin.Symbol)
+					continue
+				}
+
+				// Skip if the max amount of buy orders has been reached.
+				if maxBuyOrders := int64(b.config.TradingOptions.MaxCoins); maxBuyOrders != 0 && b.db.CountOrders(models.BuyOrder, b.market.Name()) >= maxBuyOrders {
+					b.buyLog.Warnf("Max amount of buy orders reached. Skipping.")
 					continue
 				}
 
