@@ -71,9 +71,8 @@ trading_options:
   # Trading fee in % per trade.
   #
   # Binance:
-  # - If using 0.15% (using BNB for fees) you must have BNB in your account to cover trading fees.
-  # - If using BNB for fees, it MUST be enabled in your Binance 'Dashboard' page (checkbox).
-  trading_fee: .15
+  # - If using BNB for fees, set this to 0.075 and make sure have enough BNB in your account.
+  trading_fee: 0.075
 
   # The amount of time in MINUTES to wait before buying the same coin again.
   # This is to prevent buying the same coin multiple times in a short period of time.
