@@ -1,7 +1,9 @@
-# Volatility Trading Bot
-A cross-market cryptocurrency trading bot written in go.
+<h1 align="center">
+  <img width="150" src="https://i.ibb.co/3Y1sJDQ/c175b5cd-93cd-4942-b040-d4f4b5abd2b2.jpg" alt="logo" />
+  <p>Voltra</p>
+</h1>
+<p align="center">A cross-market cryptocurrency volatility trading bot written in go.</p>
 
-Inspired by [CyberPunkMetalHead/Binance-volatility-trading-bot](https://github.com/CyberPunkMetalHead/Binance-volatility-trading-bot).
 
 > [!WARNING]  
 > This project is still under active development. Use at your own risk.
@@ -34,3 +36,6 @@ You can request a new marketplace to be supported by [creating an issue](https:/
 
 If you're a developer, you can easily add support for a new marketplace by implementing the `Market` interface [here](https://github.com/sleeyax/go-crypto-volatility-trading-bot/blob/main/internal/market/market.go).
 See the [Binance](https://github.com/sleeyax/go-crypto-volatility-trading-bot/blob/main/internal/market/binance.go) implementation as an example. Comment on the relevant issue if you need help.
+
+## Credits
+Inspired by [CyberPunkMetalHead/Binance-volatility-trading-bot](https://github.com/CyberPunkMetalHead/Binance-volatility-trading-bot) and [its forks](https://useful-forks.github.io/?repo=CyberPunkMetalHead/Binance-volatility-trading-bot).
