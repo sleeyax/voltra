@@ -4,7 +4,6 @@
 </h1>
 <p align="center">A cross-market cryptocurrency volatility trading bot written in go.</p>
 
-
 > [!WARNING]  
 > This project is still under active development. Use at your own risk.
 
