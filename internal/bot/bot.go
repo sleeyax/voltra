@@ -126,7 +126,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 					continue
 				}
 
-				b.buyLog.Infow(fmt.Sprintf("Buying %.2f %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
+				b.buyLog.Infow(fmt.Sprintf("Buying %g %s of %s.", volume, b.config.TradingOptions.PairWith, volatileCoin.Symbol),
 					"volume", volume,
 					"pair_with", b.config.TradingOptions.PairWith,
 					"symbol", volatileCoin.Symbol,
@@ -217,7 +217,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					boughtCoin.StopLoss = &sl
 					boughtCoin.TakeProfit = &tp
 
-					b.sellLog.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %.2f and trading profit (TP) to %.2f.", boughtCoin.Symbol, sl, tp)
+					b.sellLog.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %g and trading profit (TP) to %g.", boughtCoin.Symbol, sl, tp)
 
 					b.db.SaveOrder(boughtCoin)
 
@@ -236,7 +236,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker))
 					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker)) / 100
 					msg := fmt.Sprintf(
-						"Selling %.2f %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
+						"Selling %g %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
 						boughtCoin.Volume,
 						boughtCoin.Symbol,
 						profitOrLossText,
