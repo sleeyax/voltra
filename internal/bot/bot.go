@@ -204,10 +204,32 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						// If the price has changed much we make the stop loss trail closely match the take profit.
 						// This way we don't lose this increase in price if it falls back.
 						sl = tp - trailingStopOptions.TrailingStopLoss
+						b.sellLog.Debugw(
+							"Large change in price occurred.",
+							"significantPriceChangeThreshold", significantPriceChangeThreshold,
+							"priceChangePercentage", priceChangePercentage,
+							"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
+							"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
+							"currentStopLoss", *boughtCoin.StopLoss,
+							"currentTakeProfit", *boughtCoin.TakeProfit,
+							"nextStopLoss", sl,
+							"nextTakeProfit", tp,
+						)
 					} else {
 						// If the price has changed little we make the stop loss trail loosely match the take profit.
 						// This way we don't get locked out of the trade prematurely.
 						sl = *boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
+						b.sellLog.Debugw(
+							"Small change in price occurred.",
+							"significantPriceChangeThreshold", significantPriceChangeThreshold,
+							"priceChangePercentage", priceChangePercentage,
+							"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
+							"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
+							"currentStopLoss", *boughtCoin.StopLoss,
+							"currentTakeProfit", *boughtCoin.TakeProfit,
+							"nextStopLoss", sl,
+							"nextTakeProfit", tp,
+						)
 					}
 					if sl <= 0 {
 						// Revert to the current stop loss if the calculated stop loss ends up being negative.
