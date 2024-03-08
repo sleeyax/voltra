@@ -3,7 +3,7 @@ package market
 import (
 	"context"
 	"github.com/adshao/go-binance/v2"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
+	"github.com/sleeyax/voltra/internal/config"
 	"strconv"
 	"time"
 )

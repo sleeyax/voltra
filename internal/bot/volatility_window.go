@@ -2,7 +2,7 @@ package bot
 
 import (
 	"cmp"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
+	"github.com/sleeyax/voltra/internal/market"
 	"math"
 	"slices"
 	"time"

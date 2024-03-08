@@ -1,4 +1,4 @@
-module github.com/sleeyax/go-crypto-volatility-trading-bot
+module github.com/sleeyax/voltra
 
 go 1.22.0
 

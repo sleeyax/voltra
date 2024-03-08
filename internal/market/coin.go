@@ -2,7 +2,7 @@ package market
 
 import (
 	"fmt"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/utils"
+	"github.com/sleeyax/voltra/internal/utils"
 	"time"
 )
 

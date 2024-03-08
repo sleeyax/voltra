@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
+	"github.com/sleeyax/voltra/internal/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

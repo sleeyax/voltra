@@ -1,8 +1,8 @@
 package database
 
 import (
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database/models"
+	"github.com/sleeyax/voltra/internal/config"
+	"github.com/sleeyax/voltra/internal/database/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/bot"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/config"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database"
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
+	"github.com/sleeyax/voltra/internal/bot"
+	"github.com/sleeyax/voltra/internal/config"
+	"github.com/sleeyax/voltra/internal/database"
+	"github.com/sleeyax/voltra/internal/market"
 	"os"
 	"os/signal"
 )

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/market"
+	"github.com/sleeyax/voltra/internal/market"
 	"gorm.io/gorm"
 )
 

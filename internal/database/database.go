@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/sleeyax/go-crypto-volatility-trading-bot/internal/database/models"
+	"github.com/sleeyax/voltra/internal/database/models"
 )
 
 type Database interface {
