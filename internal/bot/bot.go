@@ -10,7 +10,6 @@ import (
 	"github.com/sleeyax/voltra/internal/utils"
 	"go.uber.org/zap"
 	"math"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -251,14 +250,14 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker))
 					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker)) / 100
 					msg := fmt.Sprintf(
-						"Selling %g %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
+						"Selling %g %s. Estimated %s: $%.2f %.2f%% (w/ fees: $%.2f %.2f%%)",
 						boughtCoin.Volume,
 						boughtCoin.Symbol,
 						profitOrLossText,
-						strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64),
-						strconv.FormatFloat(priceChangePercentage, 'f', 2, 64),
-						strconv.FormatFloat(estimatedProfitLossWithFees, 'f', 2, 64),
-						strconv.FormatFloat(priceChangePercentage-(b.config.TradingOptions.TradingFeeMaker+b.config.TradingOptions.TradingFeeTaker), 'f', 2, 64),
+						estimatedProfitLoss,
+						priceChangePercentage,
+						estimatedProfitLossWithFees,
+						priceChangePercentage-(b.config.TradingOptions.TradingFeeMaker+b.config.TradingOptions.TradingFeeTaker),
 					)
 
 					b.sellLog.Infow(
