@@ -200,41 +200,34 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					// Calculate trailing stop loss and take profit.
 					tp := priceChangePercentage + trailingStopOptions.TrailingTakeProfit
 					var sl float64
+					var msg string
 					if priceChangePercentage >= significantPriceChangeThreshold {
 						// If the price has changed much we make the stop loss trail closely match the take profit.
 						// This way we don't lose this increase in price if it falls back.
 						sl = tp - trailingStopOptions.TrailingStopLoss
-						b.sellLog.Debugw(
-							"Large change in price occurred.",
-							"significantPriceChangeThreshold", significantPriceChangeThreshold,
-							"priceChangePercentage", priceChangePercentage,
-							"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
-							"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
-							"currentStopLoss", *boughtCoin.StopLoss,
-							"currentTakeProfit", *boughtCoin.TakeProfit,
-							"nextStopLoss", sl,
-							"nextTakeProfit", tp,
-						)
+						msg = "Large change in price occurred."
 					} else {
 						// If the price has changed little we make the stop loss trail loosely match the take profit.
 						// This way we don't get locked out of the trade prematurely.
 						sl = *boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
-						b.sellLog.Debugw(
-							"Small change in price occurred.",
-							"significantPriceChangeThreshold", significantPriceChangeThreshold,
-							"priceChangePercentage", priceChangePercentage,
-							"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
-							"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
-							"currentStopLoss", *boughtCoin.StopLoss,
-							"currentTakeProfit", *boughtCoin.TakeProfit,
-							"nextStopLoss", sl,
-							"nextTakeProfit", tp,
-						)
+						msg = "Small change in price occurred."
 					}
 					if sl <= 0 {
 						// Revert to the current stop loss if the calculated stop loss ends up being negative.
 						sl = *boughtCoin.StopLoss
+						msg += " (stop loss became negative, reverted)"
 					}
+					b.sellLog.Debugw(
+						msg,
+						"significantPriceChangeThreshold", significantPriceChangeThreshold,
+						"priceChangePercentage", priceChangePercentage,
+						"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
+						"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
+						"currentStopLoss", *boughtCoin.StopLoss,
+						"currentTakeProfit", *boughtCoin.TakeProfit,
+						"nextStopLoss", sl,
+						"nextTakeProfit", tp,
+					)
 
 					boughtCoin.StopLoss = &sl
 					boughtCoin.TakeProfit = &tp
