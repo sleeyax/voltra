@@ -274,7 +274,7 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 	db.SaveOrder(models.Order{
 		Order: market.Order{
 			Symbol: "BTC",
-			Price:  10_000,
+			Price:  10_000 - (c.TradingOptions.TradingFeeTaker / 100 * 10_000),
 		},
 		Market:     m.Name(),
 		Type:       models.BuyOrder,
@@ -294,7 +294,7 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 	orders := db.GetOrders(models.SellOrder, m.Name())
 	assert.Equal(t, 1, len(orders))
 	assert.NotNil(t, orders[0].PriceChangePercentage)
-	assert.Equal(t, float64(-10), *orders[0].PriceChangePercentage)
+	assert.Equal(t, -9.932449337002753, *orders[0].PriceChangePercentage)
 	assert.Equal(t, float64(9000), orders[0].Price)
 }
 

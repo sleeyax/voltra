@@ -10,7 +10,6 @@ import (
 	"github.com/sleeyax/voltra/internal/utils"
 	"go.uber.org/zap"
 	"math"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -187,54 +186,54 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 			orders := b.db.GetOrders(models.BuyOrder, b.market.Name())
 			for _, boughtCoin := range orders {
-				takeProfit := boughtCoin.Price + (boughtCoin.Price*(*boughtCoin.TakeProfit))/100
-				stopLoss := boughtCoin.Price + (boughtCoin.Price*(-1*math.Abs(*boughtCoin.StopLoss)))/100
-				currentPrice := coins[boughtCoin.Symbol].Price
 				buyPrice := boughtCoin.Price
+				takeProfit := buyPrice + (buyPrice*(*boughtCoin.TakeProfit))/100
+				stopLoss := buyPrice + (buyPrice*(-1*math.Abs(*boughtCoin.StopLoss)))/100
+				currentPrice := coins[boughtCoin.Symbol].Price
 				priceChangePercentage := (currentPrice - buyPrice) / buyPrice * 100
 
-				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
-				if b.config.TradingOptions.TrailingStopOptions.Enable && currentPrice >= takeProfit {
+				// calculate fees
+				sellFees := currentPrice * (b.config.TradingOptions.TradingFeeTaker / 100)
+				buyFees := buyPrice * (b.config.TradingOptions.TradingFeeTaker / 100)
+				currentPriceExclFees := currentPrice - sellFees
+				buyPriceInclFees := buyPrice + buyFees
+				priceChangePercentageInclFees := ((currentPriceExclFees - buyPriceInclFees) / buyPriceInclFees) * 100
+
+				// Check that the price is above the take profit and readjust SL and TP accordingly if trailing stop loss is used.
+				if b.config.TradingOptions.TrailingStopOptions.Enable && currentPriceExclFees >= takeProfit {
 					trailingStopOptions := b.config.TradingOptions.TrailingStopOptions
 
 					// Calculate trailing stop loss and take profit.
-					tp := priceChangePercentage + trailingStopOptions.TrailingTakeProfit
+					tp := priceChangePercentageInclFees + trailingStopOptions.TrailingTakeProfit
 					var sl float64
-					if priceChangePercentage >= significantPriceChangeThreshold {
+					var msg string
+					if priceChangePercentageInclFees >= significantPriceChangeThreshold {
 						// If the price has changed much we make the stop loss trail closely match the take profit.
 						// This way we don't lose this increase in price if it falls back.
 						sl = tp - trailingStopOptions.TrailingStopLoss
-						b.sellLog.Debugw(
-							"Large change in price occurred.",
-							"significantPriceChangeThreshold", significantPriceChangeThreshold,
-							"priceChangePercentage", priceChangePercentage,
-							"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
-							"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
-							"currentStopLoss", *boughtCoin.StopLoss,
-							"currentTakeProfit", *boughtCoin.TakeProfit,
-							"nextStopLoss", sl,
-							"nextTakeProfit", tp,
-						)
+						msg = "Large change in price occurred."
 					} else {
 						// If the price has changed little we make the stop loss trail loosely match the take profit.
 						// This way we don't get locked out of the trade prematurely.
 						sl = *boughtCoin.TakeProfit - trailingStopOptions.TrailingStopLoss
-						b.sellLog.Debugw(
-							"Small change in price occurred.",
-							"significantPriceChangeThreshold", significantPriceChangeThreshold,
-							"priceChangePercentage", priceChangePercentage,
-							"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
-							"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
-							"currentStopLoss", *boughtCoin.StopLoss,
-							"currentTakeProfit", *boughtCoin.TakeProfit,
-							"nextStopLoss", sl,
-							"nextTakeProfit", tp,
-						)
+						msg = "Small change in price occurred."
 					}
 					if sl <= 0 {
 						// Revert to the current stop loss if the calculated stop loss ends up being negative.
 						sl = *boughtCoin.StopLoss
 					}
+					b.sellLog.Debugw(
+						msg,
+						"significantPriceChangeThreshold", significantPriceChangeThreshold,
+						"priceChangePercentage", priceChangePercentage,
+						"priceChangePercentageInclFees", priceChangePercentageInclFees,
+						"trailingStopLoss", trailingStopOptions.TrailingStopLoss,
+						"trailingTakeProfit", trailingStopOptions.TrailingTakeProfit,
+						"currentStopLoss", *boughtCoin.StopLoss,
+						"currentTakeProfit", *boughtCoin.TakeProfit,
+						"nextStopLoss", sl,
+						"nextTakeProfit", tp,
+					)
 
 					boughtCoin.StopLoss = &sl
 					boughtCoin.TakeProfit = &tp
@@ -247,25 +246,25 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 				}
 
 				// If the price of the coin is below the stop loss or above take profit then sell it.
-				if currentPrice <= stopLoss || currentPrice >= takeProfit {
+				if currentPriceExclFees <= stopLoss || currentPriceExclFees >= takeProfit {
 					var profitOrLossText string
-					if priceChangePercentage >= 0 {
+					if priceChangePercentageInclFees >= 0 {
 						profitOrLossText = "profit"
 					} else {
 						profitOrLossText = "loss"
 					}
 
-					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker))
-					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker)) / 100
+					estimatedProfitLoss := boughtCoin.Volume * buyPrice * priceChangePercentage / 100
+					estimatedProfitLossInclFees := boughtCoin.Volume * buyPrice * priceChangePercentageInclFees / 100
 					msg := fmt.Sprintf(
-						"Selling %g %s. Estimated %s: $%s %s%% (w/ fees: $%s %s%%)",
+						"Selling %g %s. Estimated %s: $%.2f %.2f%% (w/ fees: $%.2f %.2f%%)",
 						boughtCoin.Volume,
 						boughtCoin.Symbol,
 						profitOrLossText,
-						strconv.FormatFloat(estimatedProfitLoss, 'f', 2, 64),
-						strconv.FormatFloat(priceChangePercentage, 'f', 2, 64),
-						strconv.FormatFloat(estimatedProfitLossWithFees, 'f', 2, 64),
-						strconv.FormatFloat(priceChangePercentage-(b.config.TradingOptions.TradingFeeMaker+b.config.TradingOptions.TradingFeeTaker), 'f', 2, 64),
+						estimatedProfitLoss,
+						priceChangePercentage,
+						estimatedProfitLossInclFees,
+						priceChangePercentageInclFees,
 					)
 
 					b.sellLog.Infow(
