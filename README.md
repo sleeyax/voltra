@@ -31,9 +31,9 @@ The bot analyses changes in price of all coins across all supported marketplaces
 - [ ] [Add marketplace](#add-marketplace)
 
 ### Add marketplace
-You can request a new marketplace to be supported by [creating an issue](https://github.com/sleeyax/go-crypto-volatility-trading-bot/issues/new) on this repository. 
+You can request support for a new marketplace by [creating an issue](https://github.com/sleeyax/go-crypto-volatility-trading-bot/issues/new).
 
-If you're a developer, you can easily add support for a new marketplace by implementing the `Market` interface [here](https://github.com/sleeyax/go-crypto-volatility-trading-bot/blob/main/internal/market/market.go).
+If you're a developer, you can add support for a new marketplace by implementing the `Market` interface [here](https://github.com/sleeyax/go-crypto-volatility-trading-bot/blob/main/internal/market/market.go).
 See the [Binance](https://github.com/sleeyax/go-crypto-volatility-trading-bot/blob/main/internal/market/binance.go) implementation as an example. Comment on the relevant issue if you need help.
 
 ## Credits
