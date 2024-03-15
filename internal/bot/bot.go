@@ -9,6 +9,8 @@ import (
 	"github.com/sleeyax/voltra/internal/market"
 	"github.com/sleeyax/voltra/internal/utils"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"math"
 	"sync"
 	"time"
@@ -243,28 +245,19 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 				// If the price of the coin is below the stop loss or above take profit then sell it.
 				if currentPrice <= stopLoss || currentPrice >= takeProfit {
-					var profitOrLossText string
-					if priceChangePercentage >= 0 {
-						profitOrLossText = "profit"
-					} else {
-						profitOrLossText = "loss"
-					}
-
 					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - fees)
 					estimatedProfitLossPercentage := b.config.TradingOptions.Quantity * (priceChangePercentage - fees) / 100
 					msg := fmt.Sprintf(
-						"Selling %g %s. Estimated %s: $%.2f %.2f%% (w/ fees: $%.2f %.2f%%)",
+						"Selling %g %s. Estimated %s: $%.2f %.2f%%",
 						boughtCoin.Volume,
 						boughtCoin.Symbol,
-						profitOrLossText,
+						b.getProfitOrLossText(priceChangePercentage),
 						estimatedProfitLoss,
-						priceChangePercentage,
 						estimatedProfitLossPercentage,
 					)
 
 					b.sellLog.Infow(
 						msg,
-						"symbol", boughtCoin.Symbol,
 						"buyPrice", buyPrice,
 						"currentPrice", currentPrice,
 						"priceChangePercentage", priceChangePercentage,
@@ -301,8 +294,37 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						order.Order = sellOrder
 					}
 
+					// Determine actual profit/loss of the executed order.
+					sellPrice := order.Price
+					sellFee = sellPrice * (b.config.TradingOptions.TradingFeeTaker / 100)
+					priceChangePercentage = (sellPrice - buyPrice) / buyPrice * 100
+					fees = buyFee + sellFee
+					profitLoss := (sellPrice - buyPrice) * order.Volume * (1 - fees)
+					profitLossPercentage := b.config.TradingOptions.Quantity * (priceChangePercentage - fees) / 100
+					msg = fmt.Sprintf(
+						"Sold %g %s. %s: $%.2f %.2f%%",
+						boughtCoin.Volume,
+						boughtCoin.Symbol,
+						cases.Title(language.English).String(b.getProfitOrLossText(profitLossPercentage)),
+						profitLoss,
+						profitLossPercentage,
+					)
+
+					b.sellLog.Infow(
+						msg,
+						"buyPrice", buyPrice,
+						"currentPrice", currentPrice,
+						"sellPrice", sellPrice,
+						"priceChangePercentage", priceChangePercentage,
+						"tradingFeeMaker", b.config.TradingOptions.TradingFeeMaker,
+						"tradingFeeTaker", b.config.TradingOptions.TradingFeeTaker,
+						"fees", fees,
+						"quantity", b.config.TradingOptions.Quantity,
+						"testMode", b.config.EnableTestMode,
+					)
+
 					if b.config.TradingOptions.EnableDynamicQuantity {
-						b.config.TradingOptions.Quantity += estimatedProfitLoss / float64(b.config.TradingOptions.MaxCoins)
+						b.config.TradingOptions.Quantity += profitLoss / float64(b.config.TradingOptions.MaxCoins)
 					}
 
 					b.db.SaveOrder(order)
@@ -324,6 +346,16 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 			time.Sleep(time.Second * time.Duration(b.config.TradingOptions.SellTimeout))
 		}
 	}
+}
+
+func (b *Bot) getProfitOrLossText(priceChangePercentage float64) string {
+	var profitOrLossText string
+	if priceChangePercentage >= 0 {
+		profitOrLossText = "profit"
+	} else {
+		profitOrLossText = "loss"
+	}
+	return profitOrLossText
 }
 
 // updateLatestCoins fetches the latest coins from the market and appends them to the volatilityWindow.
