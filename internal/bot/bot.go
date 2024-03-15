@@ -302,16 +302,18 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 					b.db.SaveOrder(order)
 					b.db.DeleteOrder(boughtCoin)
-				} else {
-					b.sellLog.Infow(
-						fmt.Sprintf("Price of %s is %.2f%% away from the buy price. Hodl.", boughtCoin.Symbol, priceChangePercentage),
-						"symbol", boughtCoin.Symbol,
-						"buyPrice", buyPrice,
-						"currentPrice", currentPrice,
-						"takeProfit", takeProfit,
-						"stopLoss", stopLoss,
-					)
+
+					continue
 				}
+
+				b.sellLog.Infow(
+					fmt.Sprintf("Price of %s is %.2f%% away from the buy price. Hodl.", boughtCoin.Symbol, priceChangePercentage),
+					"symbol", boughtCoin.Symbol,
+					"buyPrice", buyPrice,
+					"currentPrice", currentPrice,
+					"takeProfit", takeProfit,
+					"stopLoss", stopLoss,
+				)
 			}
 
 			time.Sleep(time.Second * time.Duration(b.config.TradingOptions.SellTimeout))
