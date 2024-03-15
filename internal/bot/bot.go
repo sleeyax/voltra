@@ -247,8 +247,8 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						profitOrLossText = "loss"
 					}
 
-					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker))
-					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - (b.config.TradingOptions.TradingFeeMaker + b.config.TradingOptions.TradingFeeTaker)) / 100
+					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - b.config.TradingOptions.TradingFeeTaker)
+					estimatedProfitLossWithFees := b.config.TradingOptions.Quantity * (priceChangePercentage - b.config.TradingOptions.TradingFeeTaker) / 100
 					msg := fmt.Sprintf(
 						"Selling %g %s. Estimated %s: $%.2f %.2f%% (w/ fees: $%.2f %.2f%%)",
 						boughtCoin.Volume,
@@ -257,7 +257,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						estimatedProfitLoss,
 						priceChangePercentage,
 						estimatedProfitLossWithFees,
-						priceChangePercentage-(b.config.TradingOptions.TradingFeeMaker+b.config.TradingOptions.TradingFeeTaker),
+						priceChangePercentage-b.config.TradingOptions.TradingFeeTaker,
 					)
 
 					b.sellLog.Infow(

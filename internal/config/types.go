@@ -97,12 +97,18 @@ type TradingOptions struct {
 	TakeProfit float64 `mapstructure:"take_profit"`
 
 	// Trading fee for the maker in % per trade.
+	// When you place an order that goes on the order book partially or fully, such as a limit order, any subsequent trades coming from that order will be maker trades.
+	// These orders add volume to the order book, help to make the market, and are therefore termed makers for any subsequent trades.
 	//
 	// Binance:
 	//  - If using BNB for fees, set this to 0.075 and make sure have enough BNB in your account.
 	TradingFeeMaker float64 `mapstructure:"trading_fee_maker"`
 
 	// Trading fee for the taker in % per trade.
+	// When you place an order that trades immediately before going on the order book, you are a taker.
+	// This is regardless of whether you partially or fully fulfill the order.
+	// Trades from market orders are always takers, as market orders never go on the order book.
+	// These trades are "taking" volume off the order book, and therefore are taker trades.
 	//
 	// Binance:
 	//  - If using BNB for fees, set this to 0.075 and make sure have enough BNB in your account.
