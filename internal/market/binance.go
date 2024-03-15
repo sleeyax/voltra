@@ -73,7 +73,7 @@ func (b *Binance) GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo,
 func (b *Binance) executeOrder(ctx context.Context, coin string, quantity float64, side binance.SideType) (Order, error) {
 	quantityAsString := strconv.FormatFloat(quantity, 'f', -1, 64)
 
-	order, err := b.client.NewCreateOrderService().
+	marketOrder, err := b.client.NewCreateOrderService().
 		Symbol(coin).
 		Side(side).
 		Type(binance.OrderTypeMarket).
@@ -84,14 +84,37 @@ func (b *Binance) executeOrder(ctx context.Context, coin string, quantity float6
 		return Order{}, err
 	}
 
-	p, _ := strconv.ParseFloat(order.Price, 64)
+	order := Order{
+		OrderID:         marketOrder.OrderID,
+		Symbol:          marketOrder.Symbol,
+		TransactionTime: time.Unix(marketOrder.TransactTime, 0),
+	}
 
-	return Order{
-		OrderID:         order.OrderID,
-		Symbol:          order.Symbol,
-		Price:           p,
-		TransactionTime: time.Unix(order.TransactTime, 0),
-	}, err
+	// Market orders are not always filled at one singular price.
+	// If that's the case, we need to find the averages of all 'parts' (fills) of this order in order to calculate the total price (see code below).
+	// Otherwise, it's safe to read the price from the order itself.
+	if len(marketOrder.Fills) == 0 {
+		p, _ := strconv.ParseFloat(marketOrder.Price, 64)
+		order.Price = p
+		return order, nil
+	}
+
+	// Calculate the average price of all fills.
+	var totalPrice float64
+	var totalQuantity float64
+
+	for _, fill := range marketOrder.Fills {
+		qty, _ := strconv.ParseFloat(fill.Quantity, 64)
+		price, _ := strconv.ParseFloat(fill.Price, 64)
+		totalQuantity += qty
+		totalPrice += price * qty
+	}
+
+	fillAvg := totalPrice / totalQuantity
+
+	order.Price = fillAvg
+
+	return order, nil
 }
 
 func (b *Binance) Buy(ctx context.Context, coin string, quantity float64) (Order, error) {
