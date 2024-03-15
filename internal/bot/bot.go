@@ -298,6 +298,10 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						order.Order = sellOrder
 					}
 
+					if b.config.TradingOptions.EnableDynamicQuantity {
+						b.config.TradingOptions.Quantity += estimatedProfitLoss / float64(b.config.TradingOptions.MaxCoins)
+					}
+
 					b.db.SaveOrder(order)
 					b.db.DeleteOrder(boughtCoin)
 				} else {

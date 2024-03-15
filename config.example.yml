@@ -40,6 +40,9 @@ trading_options:
   # Recommended to specify no less than 12 USDT.
   quantity: 15
 
+  # Allows the bot to dynamically adjust the trade `quantity` based on the profit/loss of all trades during the current session.
+  enable_dynamic_quantity: false
+
   # The maximum number of coins to buy at a time.
   # For example, if this is set to 3 and the bot has bought 3 different coins, it will not buy any more until it manages to sell one or more of them.
   # Your base currency balance must be at least `max_coins` * `quantity`.

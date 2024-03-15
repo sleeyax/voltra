@@ -22,6 +22,7 @@ func TestLoad(t *testing.T) {
 
 	assert.Equal(t, "USDT", config.TradingOptions.PairWith)
 	assert.Equal(t, float64(15), config.TradingOptions.Quantity)
+	assert.Equal(t, false, config.TradingOptions.EnableDynamicQuantity)
 	assert.Equal(t, 3, config.TradingOptions.MaxCoins)
 	assert.Equal(t, 2, config.TradingOptions.TimeDifference)
 	assert.Equal(t, 10, config.TradingOptions.RecheckInterval)

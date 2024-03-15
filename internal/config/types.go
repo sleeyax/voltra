@@ -65,6 +65,9 @@ type TradingOptions struct {
 	// Recommended to specify no less than 12 USDT.
 	Quantity float64 `mapstructure:"quantity"`
 
+	// Allows the bot to dynamically adjust the trade Quantity based on the profit/loss of all trades during the current session.
+	EnableDynamicQuantity bool `mapstructure:"enable_dynamic_quantity"`
+
 	// The maximum number of coins to buy at a time.
 	// For example, if this is set to 3 and the bot has bought 3 different coins, it will not buy any more until it manages to sell one or more of them.
 	// Your base currency balance must be at least `max_coins` * `quantity`.
