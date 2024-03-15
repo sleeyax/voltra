@@ -191,6 +191,9 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 				currentPrice := coins[boughtCoin.Symbol].Price
 				buyPrice := boughtCoin.Price
 				priceChangePercentage := (currentPrice - buyPrice) / buyPrice * 100
+				sellFee := currentPrice * (b.config.TradingOptions.TradingFeeTaker / 100)
+				buyFee := buyPrice * (b.config.TradingOptions.TradingFeeTaker / 100)
+				fees := buyFee + sellFee
 
 				// Check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss is used.
 				if b.config.TradingOptions.TrailingStopOptions.Enable && currentPrice >= takeProfit {
@@ -247,7 +250,8 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						profitOrLossText = "loss"
 					}
 
-					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - b.config.TradingOptions.TradingFeeTaker)
+					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - fees)
+					estimatedProfitLossPercentage := b.config.TradingOptions.Quantity * (priceChangePercentage - fees) / 100
 					msg := fmt.Sprintf(
 						"Selling %g %s. Estimated %s: $%.2f %.2f%% (w/ fees: $%.2f %.2f%%)",
 						boughtCoin.Volume,
@@ -255,7 +259,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						profitOrLossText,
 						estimatedProfitLoss,
 						priceChangePercentage,
-						priceChangePercentage-b.config.TradingOptions.TradingFeeTaker,
+						estimatedProfitLossPercentage,
 					)
 
 					b.sellLog.Infow(
@@ -266,6 +270,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 						"priceChangePercentage", priceChangePercentage,
 						"tradingFeeMaker", b.config.TradingOptions.TradingFeeMaker,
 						"tradingFeeTaker", b.config.TradingOptions.TradingFeeTaker,
+						"fees", fees,
 						"quantity", b.config.TradingOptions.Quantity,
 						"testMode", b.config.EnableTestMode,
 					)
