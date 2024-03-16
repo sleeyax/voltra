@@ -1,10 +1,10 @@
 package database
 
 import (
+	"github.com/glebarez/sqlite"
 	"github.com/sleeyax/voltra/internal/config"
 	"github.com/sleeyax/voltra/internal/database/models"
 	"github.com/sleeyax/voltra/internal/storage"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
