@@ -10,7 +10,7 @@
 > [!NOTE]  
 > This project has entered its alpha phase. We welcome you to report and/or help resolve any bugs!
 
-![build status](https://github.com/sleeyax/voltra/actions/workflows/build_and_test.yml/badge.svg)
+![build status](https://github.com/sleeyax/voltra/actions/workflows/run_tests.yml/badge.svg)
 
 ## Strategy
 The bot analyses changes in price of all coins across all supported marketplaces and places trades on the most volatile ones.
