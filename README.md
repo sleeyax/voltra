@@ -4,8 +4,11 @@
 </h1>
 <p align="center">A cross-market cryptocurrency volatility trading bot written in go.</p>
 
+> [!WARNING]  
+> Trading cryptocurrency carries risks. This bot is a tool in your toolbox, not financial advice. Use at your own discretion.
+
 > [!NOTE]  
-> This project has reached its alpha phase. You are invited to report and/or solve bugs!
+> This project has entered its alpha phase. We welcome you to report and/or help resolve any bugs!
 
 ![build status](https://github.com/sleeyax/voltra/actions/workflows/build_and_test.yml/badge.svg)
 
@@ -80,13 +83,6 @@ $ docker run --name voltra --volume ./data:/bot/data -it sleeyax/voltra:latest
 ```sh
 $ docker run --name voltra --volume ./config.yml:/bot/config.yml:ro -it sleeyax/voltra:latest
 ```
-
-## Disclaimer
-Trading cryptocurrencies carries risks, including the potential for loss. 
-This trading bot is a tool in your toolbox and should not be treated as financial advice. 
-Past performance doesn't guarantee future results; markets are volatile, and technical issues or regulatory changes may affect outcomes. 
-Users should trade responsibly, understand the risks, and use the bot at their own discretion. 
-None of our contributors are liable for any losses incurred.
 
 ## Credits
 Inspired by [CyberPunkMetalHead/Binance-volatility-trading-bot](https://github.com/CyberPunkMetalHead/Binance-volatility-trading-bot) and [its many forks](https://useful-forks.github.io/?repo=CyberPunkMetalHead/Binance-volatility-trading-bot).
