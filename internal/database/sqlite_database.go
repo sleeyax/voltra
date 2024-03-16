@@ -42,7 +42,7 @@ func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabas
 		),
 	})
 	if err != nil {
-		panic("failed to connect to the local database")
+		panic("failed to connect to the local database: " + err.Error())
 	}
 
 	_ = db.AutoMigrate(&models.Order{})
