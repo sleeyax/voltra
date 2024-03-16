@@ -50,7 +50,7 @@ func (b *Bot) flushLogs() {
 // Start starts monitoring the market for price changes.
 func (b *Bot) Start(ctx context.Context) {
 	defer b.flushLogs()
-	b.botLog.Info("Bot started.")
+	b.botLog.Info("Bot started. Press CTRL + C to quit.")
 
 	var wg sync.WaitGroup
 	wg.Add(2)
