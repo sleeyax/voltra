@@ -3,7 +3,7 @@ module github.com/sleeyax/voltra
 go 1.22.0
 
 require (
-	github.com/adshao/go-binance/v2 v2.4.5
+	github.com/adshao/go-binance/v2 v2.5.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
