@@ -1,0 +1,9 @@
+.idea/
+.git/
+.github/
+data/
+*.db
+*.y*ml
+.gitignore
+Dockerfile
+README.md

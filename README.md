@@ -38,6 +38,39 @@ You can request support for a new marketplace by [creating an issue](https://git
 If you're a developer, you can add support for a new marketplace by implementing the `Market` interface [here](https://github.com/sleeyax/voltra/blob/main/internal/market/market.go).
 See the [Binance](https://github.com/sleeyax/gvoltra/blob/main/internal/market/binance.go) implementation as an example. Comment on the relevant issue if you need help.
 
+## Getting started
+
+### Docker
+You can also run the bot on any platform or cloud provider that supports Docker.
+
+First, clone the source code and build the docker image locally:
+
+```sh
+$ git clone https://github.com/sleeyax/voltra.git
+$ cd voltra
+$ docker build --tag sleeyax/voltra:latest .
+```
+
+Then, to run the bot you have the option to run with our without data persistence. When you opt for the latter, any outputted data such as your database will be deleted as soon as the container is removed.
+
+- With full data persistence:
+
+```sh
+$ docker run --name voltra --volume ./config.yml:/bot/config.yml:ro --volume ./data:/bot/data -it sleeyax/voltra:latest
+```
+
+Alternatively, you can store your config file in the `data` directory and only mount that directory:
+
+```sh
+$ docker run --name voltra --volume ./data:/bot/data -it sleeyax/voltra:latest
+```
+
+- Without data persistence:
+
+```sh
+$ docker run --name voltra --volume ./config.yml:/bot/config.yml:ro -it sleeyax/voltra:latest
+```
+
 ## Disclaimer
 Trading cryptocurrencies carries risks, including the potential for loss. 
 This trading bot is a tool in your toolbox and should not be treated as financial advice. 
