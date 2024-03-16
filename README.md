@@ -5,7 +5,7 @@
 <p align="center">A cross-market cryptocurrency volatility trading bot written in go.</p>
 
 > [!WARNING]  
-> Trading cryptocurrency carries risks. This bot is a tool in your toolbox, not financial advice. Use at your own discretion.
+> Trading cryptocurrency carries risks. This bot is a tool, not financial advice. Use at your own discretion.
 
 > [!NOTE]  
 > This project has entered its alpha phase. We welcome you to report and/or help resolve any bugs!
