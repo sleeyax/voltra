@@ -1,6 +1,6 @@
 module github.com/sleeyax/voltra
 
-go 1.22.0
+go 1.22.1
 
 require (
 	github.com/adshao/go-binance/v2 v2.4.5
