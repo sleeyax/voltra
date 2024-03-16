@@ -41,15 +41,23 @@ See the [Binance](https://github.com/sleeyax/gvoltra/blob/main/internal/market/b
 ## Getting started
 
 ### Docker
-You can also run the bot on any platform or cloud provider that supports Docker.
+You can run the bot on any platform or cloud provider that supports Docker.
 
-First, clone the source code and build the docker image locally:
-
+First, pull the latest image from GitHub's container registry as follows:
 ```sh
-$ git clone https://github.com/sleeyax/voltra.git
-$ cd voltra
-$ docker build --tag sleeyax/voltra:latest .
+$ docker pull ghcr.io/sleeyax/voltra:latest
 ```
+
+<details>
+  <summary>OR click here for instructions to build from source</summary>
+  Clone the source code and build the docker image locally:
+
+  ```sh
+  $ git clone https://github.com/sleeyax/voltra.git
+  $ cd voltra
+  $ docker build --tag ghcr.io/sleeyax/voltra:latest .
+  ```
+</details>
 
 Then, to run the bot you have the option to run with our without data persistence. When you opt for the latter, any outputted data such as your database will be deleted as soon as the container is removed.
 
