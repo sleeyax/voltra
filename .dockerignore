@@ -6,4 +6,3 @@ data/
 *.y*ml
 .gitignore
 Dockerfile
-README.md
