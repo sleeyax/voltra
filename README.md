@@ -45,6 +45,22 @@ See the [Binance](https://github.com/sleeyax/gvoltra/blob/main/internal/market/b
 
 ## Getting started
 
+First of all, make sure you have a valid config file. You can use the [example config](./config.example.yml) as a starting point:
+
+```sh
+$ cp config.example.yml config.yml
+```
+
+Open the file in your text editor of choice and edit it according to your preferred trading strategy. Don't forget to at least configure your API keys!
+
+### Binaries
+The easiest way to get started is by downloading the latest release for your operating system from the [releases page](https://github.com/sleeyax/voltra/releases). 
+Extract the archive, copy your config file to the same directory and finally run the binary in a terminal/command prompt as follows:
+
+```sh
+$ ./voltra
+```
+
 ### Docker
 You can run the bot on any platform or cloud provider that supports Docker.
 
