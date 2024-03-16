@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/sleeyax/voltra/internal/storage"
 	"github.com/spf13/viper"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,7 @@ func Load(configPaths ...string) (Configuration, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
+	viper.AddConfigPath(storage.DataPath)
 	for _, configPath := range configPaths {
 		fileExtension := filepath.Ext(configPath)
 		if fileExtension == ".yml" || fileExtension == ".yaml" {

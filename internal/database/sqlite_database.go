@@ -3,11 +3,13 @@ package database
 import (
 	"github.com/sleeyax/voltra/internal/config"
 	"github.com/sleeyax/voltra/internal/database/models"
+	"github.com/sleeyax/voltra/internal/storage"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -17,7 +19,7 @@ type SqliteDatabase struct {
 
 var _ Database = (*SqliteDatabase)(nil)
 
-func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabase {
+func NewSqliteDatabase(fileName string, options config.LoggingOptions) *SqliteDatabase {
 	var logLevel config.LogLevel
 	if !options.Enable || options.EnableStructuredLogging {
 		logLevel = config.SilentLevel
@@ -35,7 +37,9 @@ func NewSqliteDatabase(dsn string, options config.LoggingOptions) *SqliteDatabas
 		LogLevel:                  toGORMLogLevel(logLevel),
 	}
 
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
+	_ = storage.CreateDataDirectoryIfNotExists()
+
+	db, err := gorm.Open(sqlite.Open(filepath.Join(storage.DataPath, fileName)), &gorm.Config{
 		Logger: logger.New(
 			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 			customLoggerConfig,

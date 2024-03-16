@@ -20,6 +20,6 @@ func main() {
 		panic(fmt.Errorf("failed to load config file: %w", err))
 	}
 
-	b := bot.New(&c, market.NewBinance(c), database.NewSqliteDatabase("data.db", c.LoggingOptions))
+	b := bot.New(&c, market.NewBinance(c), database.NewSqliteDatabase("voltra.db", c.LoggingOptions))
 	b.Start(ctx)
 }
