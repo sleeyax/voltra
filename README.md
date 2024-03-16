@@ -26,17 +26,17 @@ The bot analyses changes in price of all coins across all supported marketplaces
 - [x] Trade history is stored to a (local) database. 
 - [x] Production-grade logging
 - [ ] Receive status updates via Telegram or Discord **- coming very soon!**
-- [ ] [Request a feature!](https://github.com/sleeyax/go-crypto-volatility-trading-bot/issues/new)
+- [ ] [Request a feature!](https://github.com/sleeyax/voltra/issues/new?assignees=&labels=feature&projects=&template=feature_request.md&title=)
 
 ## Supported markets
 - [x] Binance
 - [ ] [Add marketplace](#add-marketplace)
 
 ### Add marketplace
-You can request support for a new marketplace by [creating an issue](https://github.com/sleeyax/go-crypto-volatility-trading-bot/issues/new).
+You can request support for a new marketplace by [creating an issue](https://github.com/sleeyax/voltra/issues/new?assignees=&labels=feature&projects=&template=feature_request.md&title=).
 
-If you're a developer, you can add support for a new marketplace by implementing the `Market` interface [here](https://github.com/sleeyax/go-crypto-volatility-trading-bot/blob/main/internal/market/market.go).
-See the [Binance](https://github.com/sleeyax/go-crypto-volatility-trading-bot/blob/main/internal/market/binance.go) implementation as an example. Comment on the relevant issue if you need help.
+If you're a developer, you can add support for a new marketplace by implementing the `Market` interface [here](https://github.com/sleeyax/voltra/blob/main/internal/market/market.go).
+See the [Binance](https://github.com/sleeyax/gvoltra/blob/main/internal/market/binance.go) implementation as an example. Comment on the relevant issue if you need help.
 
 ## Disclaimer
 Trading cryptocurrencies carries risks, including the potential for loss. 
