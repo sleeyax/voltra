@@ -13,9 +13,10 @@ import (
 )
 
 type mockMarket struct {
-	coinsIndex int
-	coins      []market.CoinMap
-	cancel     context.CancelFunc
+	coinsIndex  int
+	coins       []market.CoinMap
+	coinsVolume market.CoinVolumeTradedMap
+	cancel      context.CancelFunc
 }
 
 // ensure mockMarket implements the Market interface
@@ -38,6 +39,10 @@ func (m *mockMarket) Buy(ctx context.Context, coin string, quantity float64) (ma
 
 func (m *mockMarket) Sell(ctx context.Context, coin string, quantity float64) (market.Order, error) {
 	panic("implement me")
+}
+
+func (m *mockMarket) GetCoinsVolume(_ context.Context) (market.CoinVolumeTradedMap, error) {
+	return m.coinsVolume, nil
 }
 
 func (m *mockMarket) GetCoins(_ context.Context) (market.CoinMap, error) {
