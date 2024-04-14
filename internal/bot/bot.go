@@ -52,6 +52,10 @@ func (b *Bot) Start(ctx context.Context) {
 	defer b.flushLogs()
 	b.botLog.Info("Bot started. Press CTRL + C to quit.")
 
+	if err := b.updateVolumeTraded(ctx); err != nil {
+		panic(fmt.Sprintf("failed to load initial volume traded: %s", err))
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -68,9 +72,6 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	b.buyLog.Debug("Watching coins to buy.")
 
-	if err := b.updateVolumeTraded(ctx); err != nil {
-		panic(fmt.Sprintf("failed to load initial volume traded: %s", err))
-	}
 	if err := b.updateLatestCoins(ctx); err != nil {
 		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
 	}
