@@ -88,6 +88,10 @@ trading_options:
   # Set to 0 to disable.
   cool_off_delay: 0
 
+  # Trading volume threshold in pair_with currency for a coin to be considered for trading.
+  # For Binance, this value refers to the 24h quote asset trading volume of the coin.
+  min_quote_volume_traded: 100000
+
   # Configuration for trailing stop loss.
   trailing_stop_options:
     # Whether to enable trailing stop loss.
