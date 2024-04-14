@@ -22,6 +22,8 @@ func TestCoin_IsAvailableForTrading(t *testing.T) {
 	assert.Equal(t, false, coin.IsAvailableForTrading(allowList, denyList, pairWith))
 	coin.Symbol = "EURUSDT"
 	assert.Equal(t, false, coin.IsAvailableForTrading(allowList, denyList, pairWith))
+	coin.Symbol = "BTCUSDC"
+	assert.Equal(t, false, coin.IsAvailableForTrading(allowList, denyList, pairWith))
 
 	// test no allowlist
 	coin.Symbol = "BTCUSDT"
@@ -29,6 +31,8 @@ func TestCoin_IsAvailableForTrading(t *testing.T) {
 	coin.Symbol = "ETHUSDT"
 	assert.Equal(t, true, coin.IsAvailableForTrading([]string{}, denyList, pairWith))
 	coin.Symbol = "EURUSDT"
+	assert.Equal(t, false, coin.IsAvailableForTrading([]string{}, denyList, pairWith))
+	coin.Symbol = "BTCUSDC"
 	assert.Equal(t, false, coin.IsAvailableForTrading([]string{}, denyList, pairWith))
 
 	// test no denylist
@@ -38,6 +42,8 @@ func TestCoin_IsAvailableForTrading(t *testing.T) {
 	assert.Equal(t, false, coin.IsAvailableForTrading(allowList, []string{}, pairWith))
 	coin.Symbol = "EURUSDT"
 	assert.Equal(t, false, coin.IsAvailableForTrading(allowList, []string{}, pairWith))
+	coin.Symbol = "BTCUSDC"
+	assert.Equal(t, false, coin.IsAvailableForTrading(allowList, []string{}, pairWith))
 
 	// test no allowlist and no denylist
 	coin.Symbol = "BTCUSDT"
@@ -46,4 +52,6 @@ func TestCoin_IsAvailableForTrading(t *testing.T) {
 	assert.Equal(t, true, coin.IsAvailableForTrading([]string{}, []string{}, pairWith))
 	coin.Symbol = "EURUSDT"
 	assert.Equal(t, true, coin.IsAvailableForTrading([]string{}, []string{}, pairWith))
+	coin.Symbol = "BTCUSDC"
+	assert.Equal(t, false, coin.IsAvailableForTrading([]string{}, []string{}, pairWith))
 }
