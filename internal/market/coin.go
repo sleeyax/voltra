@@ -13,6 +13,9 @@ type Coin struct {
 	// The price of the coin.
 	Price float64 `json:"price"`
 
+	// The 24h quote asset volume traded of the coin.
+	QuoteVolumeTraded float64 `json:"quote_volume_traded"`
+
 	// The time this coin was indexed.
 	Time time.Time `json:"time"`
 }
@@ -29,6 +32,10 @@ type VolatileCoins map[string]VolatileCoin
 
 type CoinMap map[string]Coin
 
+type CoinVolumeTradedMap map[string]float64
+
+var CoinVolumes CoinVolumeTradedMap
+
 type SymbolInfo struct {
 	// The symbol of the coin.
 	Symbol string
@@ -43,11 +50,14 @@ func (c Coin) String() string {
 }
 
 // IsAvailableForTrading checks if the coin should be picked up by the bot for trading.
-// It checks if the coin is in the custom list and if it's not a fiat currency, both of which are options defined in the given config.
-func (c Coin) IsAvailableForTrading(allowList, denyList []string, pairWith string) bool {
+// It checks whether the coin has the desired minimum quote asset trading volume, is in the custom list, and it's not a blacklisted symbol. These options are defined in the given config file.
+func (c Coin) IsAvailableForTrading(allowList, denyList []string, pairWith string, minQuoteVolumeTraded float64) bool {
+	if c.QuoteVolumeTraded < minQuoteVolumeTraded {
+		return false
+	}
 	if len(denyList) > 0 {
-		if utils.Any(denyList, func(fiat string) bool {
-			return c.Symbol == fiat
+		if utils.Any(denyList, func(blacklistedSymbol string) bool {
+			return c.Symbol == blacklistedSymbol
 		}) {
 			return false
 		}

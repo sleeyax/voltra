@@ -42,12 +42,30 @@ func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 			Price:  priceAsFloat,
 			Time:   now,
 		}
-		if coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith) {
+		if quoteVolume, ok := CoinVolumes[price.Symbol]; ok {
+			coin.QuoteVolumeTraded = quoteVolume
+		}
+		if coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith, b.config.TradingOptions.MinQuoteVolumeTraded) {
 			coins[coin.Symbol] = coin
 		}
 	}
 
 	return coins, nil
+}
+
+func (b *Binance) GetCoinsVolume(ctx context.Context) (CoinVolumeTradedMap, error) {
+	volumeMap := make(CoinVolumeTradedMap)
+	if b.config.TradingOptions.MinQuoteVolumeTraded != 0.0 {
+		priceStats24Hours, err := b.client.NewListPriceChangeStatsService().Do(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, priceStat := range priceStats24Hours {
+			quoteVolumeAsFloat, _ := strconv.ParseFloat(priceStat.QuoteVolume, 64)
+			volumeMap[priceStat.Symbol] = quoteVolumeAsFloat
+		}
+	}
+	return volumeMap, nil
 }
 
 func (b *Binance) GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo, error) {

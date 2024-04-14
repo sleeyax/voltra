@@ -119,6 +119,10 @@ type TradingOptions struct {
 	// Set to 0 to disable.
 	CoolOffDelay int `mapstructure:"cool_off_delay"`
 
+	// The minimum 24h quote asset volume traded of the coin.
+	// This is to avoid buying coins with very low trading volume.
+	MinQuoteVolumeTraded float64 `mapstructure:"min_quote_volume_traded"`
+
 	// Configuration for trailing stop loss.
 	TrailingStopOptions TrailingStopOptions `mapstructure:"trailing_stop_options"`
 

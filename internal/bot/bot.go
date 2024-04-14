@@ -68,15 +68,27 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	b.buyLog.Debug("Watching coins to buy.")
 
+	if err := b.updateVolumeTraded(ctx); err != nil {
+		panic(fmt.Sprintf("failed to load initial volume traded: %s", err))
+	}
 	if err := b.updateLatestCoins(ctx); err != nil {
 		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
 	}
+
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			b.buyLog.Debug("Bot stopped buying coins.")
 			return
+		case <-ticker.C:
+			// We want to update the volume traded every hour to avoid API rate limiting. This can be a configurable option in the future.
+			if err := b.updateVolumeTraded(ctx); err != nil {
+				b.buyLog.Errorf("Failed to update volume traded: %s.", err)
+				continue
+			}
 		default:
 			// Wait until the next recheck interval.
 			lastRecord := b.volatilityWindow.GetLatestRecord()
@@ -356,6 +368,20 @@ func (b *Bot) getProfitOrLossText(priceChangePercentage float64) string {
 		profitOrLossText = "loss"
 	}
 	return profitOrLossText
+}
+
+// updateVolumeTraded fetches the volume traded of all coins from the market and stores them in the CoinVolumes map.
+func (b *Bot) updateVolumeTraded(ctx context.Context) error {
+	b.botLog.Debug("Fetching volume traded of all coins.")
+
+	volumeTraded, err := b.market.GetCoinsVolume(ctx)
+	if err != nil {
+		return err
+	}
+
+	market.CoinVolumes = volumeTraded
+
+	return nil
 }
 
 // updateLatestCoins fetches the latest coins from the market and appends them to the volatilityWindow.
