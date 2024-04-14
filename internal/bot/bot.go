@@ -75,7 +75,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
 	}
 
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
 	for {
