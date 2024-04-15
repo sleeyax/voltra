@@ -133,41 +133,61 @@ func TestBot_buy(t *testing.T) {
 		EnableTestMode: true,
 		LoggingOptions: config.LoggingOptions{Enable: false},
 		TradingOptions: config.TradingOptions{
-			ChangeInPrice: 10, // 10%
-			PairWith:      "USDT",
-			Quantity:      10, // trade 10 USDT
+			ChangeInPrice:        10, // 10%
+			PairWith:             "USDT",
+			Quantity:             10, // trade 10 USDT
+			MinQuoteVolumeTraded: 100_000,
 		},
 	}
 
 	m := newMockMarket(cancel)
 	m.AddCoins(market.CoinMap{
 		"BTC": market.Coin{
-			Symbol: "BTC",
-			Price:  10_000,
+			Symbol:            "BTCUSDT",
+			Price:             10_000,
+			QuoteVolumeTraded: 50_000,
 		},
 		"ETH": market.Coin{
-			Symbol: "ETH",
-			Price:  10_000,
+			Symbol:            "ETHUSDT",
+			Price:             10_000,
+			QuoteVolumeTraded: 80_000,
 		},
 	})
 	m.AddCoins(market.CoinMap{
 		"BTC": market.Coin{
-			Symbol: "BTC",
-			Price:  10_500,
+			Symbol:            "BTCUSDT",
+			Price:             10_500,
+			QuoteVolumeTraded: 100_000,
 		},
 		"ETH": market.Coin{
-			Symbol: "ETH",
-			Price:  9_000,
+			Symbol:            "ETHUSDT",
+			Price:             9_000,
+			QuoteVolumeTraded: 20_000,
 		},
 	})
 	m.AddCoins(market.CoinMap{
 		"BTC": market.Coin{
-			Symbol: "BTC",
-			Price:  11_000,
+			Symbol:            "BTCUSDT",
+			Price:             11_000,
+			QuoteVolumeTraded: 120_000,
 		},
 		"ETH": market.Coin{
-			Symbol: "ETH",
-			Price:  10_000,
+			Symbol:            "ETHUSDT",
+			Price:             10_000,
+			QuoteVolumeTraded: 400_000,
+		},
+	})
+	// price change above threshold but not enough trading volume
+	m.AddCoins(market.CoinMap{
+		"BTC": market.Coin{
+			Symbol:            "BTCUSDT",
+			Price:             14_000,
+			QuoteVolumeTraded: 30_000,
+		},
+		"ETH": market.Coin{
+			Symbol:            "ETHUSDT",
+			Price:             13_000,
+			QuoteVolumeTraded: 40_000,
 		},
 	})
 
@@ -181,7 +201,7 @@ func TestBot_buy(t *testing.T) {
 
 	orders := db.GetOrders(models.BuyOrder, m.Name())
 	assert.Equal(t, 1, len(orders))
-	assert.Equal(t, "BTC", orders[0].Symbol)
+	assert.Equal(t, "BTCUSDT", orders[0].Symbol)
 	assert.Equal(t, 0.0009091, orders[0].Volume)
 }
 
