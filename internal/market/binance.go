@@ -45,9 +45,7 @@ func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 		if quoteVolume, ok := CoinVolumes[price.Symbol]; ok {
 			coin.QuoteVolumeTraded = quoteVolume
 		}
-		if coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith, b.config.TradingOptions.MinQuoteVolumeTraded) {
-			coins[coin.Symbol] = coin
-		}
+		coins[coin.Symbol] = coin
 	}
 
 	return coins, nil

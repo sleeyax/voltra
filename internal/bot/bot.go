@@ -110,6 +110,12 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
 			b.buyLog.Infof("Found %d volatile coins.", len(volatileCoins))
 			for _, volatileCoin := range volatileCoins {
+
+				if !volatileCoin.Coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith, b.config.TradingOptions.MinQuoteVolumeTraded) {
+					b.buyLog.Debugf("Coin %s is not available for trading. Skipping.", volatileCoin.Symbol)
+					continue
+				}
+
 				b.buyLog.Infof("Coin %s has gained %.2f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
 				// Skip if the coin has already been bought.
