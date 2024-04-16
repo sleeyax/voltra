@@ -48,8 +48,8 @@ func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 	return coins, nil
 }
 
-func (b *Binance) GetCoinsVolume(ctx context.Context) (CoinVolumeTradedMap, error) {
-	volumeMap := make(CoinVolumeTradedMap)
+func (b *Binance) GetCoinsVolume(ctx context.Context) (TradeVolumes, error) {
+	volumeMap := make(TradeVolumes)
 	if b.config.TradingOptions.MinQuoteVolumeTraded != 0.0 {
 		priceStats24Hours, err := b.client.NewListPriceChangeStatsService().Do(ctx)
 		if err != nil {

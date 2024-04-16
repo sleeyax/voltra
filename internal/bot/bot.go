@@ -22,7 +22,7 @@ type Bot struct {
 	market           market.Market
 	db               database.Database
 	volatilityWindow *VolatilityWindow
-	coinVolumes      market.CoinVolumeTradedMap
+	tradeVolumes     market.TradeVolumes
 	config           *config.Configuration
 	botLog           *zap.SugaredLogger
 	buyLog           *zap.SugaredLogger
@@ -389,7 +389,7 @@ func (b *Bot) updateVolumeTraded(ctx context.Context) error {
 		return err
 	}
 
-	b.coinVolumes = volumeTraded
+	b.tradeVolumes = volumeTraded
 
 	return nil
 }
@@ -404,7 +404,7 @@ func (b *Bot) updateLatestCoins(ctx context.Context) error {
 	}
 
 	for symbol, coin := range coins {
-		if quoteVolume, ok := b.coinVolumes[symbol]; ok {
+		if quoteVolume, ok := b.tradeVolumes[symbol]; ok {
 			coin.QuoteVolumeTraded = quoteVolume
 		}
 	}

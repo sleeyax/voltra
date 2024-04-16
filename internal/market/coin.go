@@ -32,7 +32,7 @@ type VolatileCoins map[string]VolatileCoin
 
 type CoinMap map[string]Coin
 
-type CoinVolumeTradedMap map[string]float64
+type TradeVolumes map[string]float64
 
 type SymbolInfo struct {
 	// The symbol of the coin.

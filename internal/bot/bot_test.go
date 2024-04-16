@@ -40,7 +40,7 @@ func (m *mockMarket) Sell(ctx context.Context, coin string, quantity float64) (m
 	panic("implement me")
 }
 
-func (m *mockMarket) GetCoinsVolume(_ context.Context) (market.CoinVolumeTradedMap, error) {
+func (m *mockMarket) GetCoinsVolume(_ context.Context) (market.TradeVolumes, error) {
 	panic("implement me")
 }
 

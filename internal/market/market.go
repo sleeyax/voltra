@@ -15,7 +15,7 @@ type Market interface {
 	GetCoins(ctx context.Context) (CoinMap, error)
 
 	// GetCoinsVolume returns the quote volume traded for all coins on the market.
-	GetCoinsVolume(ctx context.Context) (CoinVolumeTradedMap, error)
+	GetCoinsVolume(ctx context.Context) (TradeVolumes, error)
 
 	// GetSymbolInfo returns the symbol info for the given symbol.
 	GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo, error)
