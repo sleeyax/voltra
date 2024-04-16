@@ -12,7 +12,7 @@ type Market interface {
 	Name() string
 
 	// GetCoins returns the current price of all coins on the market.
-	GetCoins(ctx context.Context) (CoinMap, error)
+	GetCoins(ctx context.Context) (Coins, error)
 
 	// GetCoinsVolume returns the quote volume traded for all coins on the market.
 	GetCoinsVolume(ctx context.Context) (TradeVolumes, error)

@@ -14,7 +14,7 @@ const UnlimitedVolatilityWindowLength = 0
 
 type VolatilityWindowRecord struct {
 	time  time.Time
-	coins market.CoinMap
+	coins market.Coins
 }
 
 type VolatilityWindow struct {
@@ -36,7 +36,7 @@ func (h *VolatilityWindow) Size() int {
 }
 
 // AddRecord adds a new record to the volatilityWindow.
-func (h *VolatilityWindow) AddRecord(coins market.CoinMap) {
+func (h *VolatilityWindow) AddRecord(coins market.Coins) {
 	if l := h.Size(); l == h.maxLength && l != UnlimitedVolatilityWindowLength {
 		// remove everything except the last record
 		// h.records = h.records[h.maxLength-1:]

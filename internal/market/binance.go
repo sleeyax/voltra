@@ -26,13 +26,13 @@ func (b *Binance) Name() string {
 	return "binance"
 }
 
-func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
+func (b *Binance) GetCoins(ctx context.Context) (Coins, error) {
 	prices, err := b.client.NewListPricesService().Do(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	coins := make(CoinMap)
+	coins := make(Coins)
 	now := time.Now()
 
 	for _, price := range prices {

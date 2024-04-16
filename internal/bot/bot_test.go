@@ -14,7 +14,7 @@ import (
 
 type mockMarket struct {
 	coinsIndex int
-	coins      []market.CoinMap
+	coins      []market.Coins
 	cancel     context.CancelFunc
 }
 
@@ -23,7 +23,7 @@ var _ market.Market = (*mockMarket)(nil)
 
 func newMockMarket(cancel context.CancelFunc) *mockMarket {
 	return &mockMarket{
-		coins:  make([]market.CoinMap, 0),
+		coins:  make([]market.Coins, 0),
 		cancel: cancel,
 	}
 }
@@ -44,7 +44,7 @@ func (m *mockMarket) GetCoinsVolume(_ context.Context) (market.TradeVolumes, err
 	panic("implement me")
 }
 
-func (m *mockMarket) GetCoins(_ context.Context) (market.CoinMap, error) {
+func (m *mockMarket) GetCoins(_ context.Context) (market.Coins, error) {
 	if m.coinsIndex >= len(m.coins) {
 		m.cancel()
 		return nil, fmt.Errorf("no coins found at index %d", m.coinsIndex)
@@ -57,7 +57,7 @@ func (m *mockMarket) GetCoins(_ context.Context) (market.CoinMap, error) {
 	return coins, nil
 }
 
-func (m *mockMarket) AddCoins(coins market.CoinMap) {
+func (m *mockMarket) AddCoins(coins market.Coins) {
 	m.coins = append(m.coins, coins)
 }
 
@@ -140,7 +140,7 @@ func TestBot_buy(t *testing.T) {
 	}
 
 	m := newMockMarket(cancel)
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"BTC": market.Coin{
 			Symbol:            "BTCUSDT",
 			Price:             10_000,
@@ -152,7 +152,7 @@ func TestBot_buy(t *testing.T) {
 			QuoteVolumeTraded: 80_000,
 		},
 	})
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"BTC": market.Coin{
 			Symbol:            "BTCUSDT",
 			Price:             10_500,
@@ -164,7 +164,7 @@ func TestBot_buy(t *testing.T) {
 			QuoteVolumeTraded: 20_000,
 		},
 	})
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"BTC": market.Coin{
 			Symbol:            "BTCUSDT",
 			Price:             11_000,
@@ -177,7 +177,7 @@ func TestBot_buy(t *testing.T) {
 		},
 	})
 	// price change above threshold but not enough trading volume
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"BTC": market.Coin{
 			Symbol:            "BTCUSDT",
 			Price:             14_000,
@@ -221,7 +221,7 @@ func TestBot_sell(t *testing.T) {
 	}
 
 	m := newMockMarket(cancel)
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"XTZUSDT": market.Coin{
 			Symbol: "XTZUSDT",
 			Price:  1.295,
@@ -273,19 +273,19 @@ func TestBot_sell_with_trailing_stop_loss(t *testing.T) {
 	}
 
 	m := newMockMarket(cancel)
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"BTC": market.Coin{
 			Symbol: "BTC",
 			Price:  11_000,
 		},
 	})
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"BTC": market.Coin{
 			Symbol: "BTC",
 			Price:  11_050,
 		},
 	})
-	m.AddCoins(market.CoinMap{
+	m.AddCoins(market.Coins{
 		"BTC": market.Coin{
 			Symbol: "BTC",
 			Price:  9000,

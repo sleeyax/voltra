@@ -30,7 +30,7 @@ type VolatileCoin struct {
 
 type VolatileCoins map[string]VolatileCoin
 
-type CoinMap map[string]Coin
+type Coins map[string]Coin
 
 type TradeVolumes map[string]float64
 
