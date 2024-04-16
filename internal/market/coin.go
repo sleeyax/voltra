@@ -34,8 +34,6 @@ type CoinMap map[string]Coin
 
 type CoinVolumeTradedMap map[string]float64
 
-var CoinVolumes CoinVolumeTradedMap
-
 type SymbolInfo struct {
 	// The symbol of the coin.
 	Symbol string

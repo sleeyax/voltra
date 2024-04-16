@@ -42,9 +42,6 @@ func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 			Price:  priceAsFloat,
 			Time:   now,
 		}
-		if quoteVolume, ok := CoinVolumes[price.Symbol]; ok {
-			coin.QuoteVolumeTraded = quoteVolume
-		}
 		coins[coin.Symbol] = coin
 	}
 
