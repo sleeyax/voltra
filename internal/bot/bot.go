@@ -52,8 +52,10 @@ func (b *Bot) Start(ctx context.Context) {
 	defer b.flushLogs()
 	b.botLog.Info("Bot started. Press CTRL + C to quit.")
 
-	if err := b.updateVolumeTraded(ctx); err != nil {
-		panic(fmt.Sprintf("failed to load initial volume traded: %s", err))
+	if b.config.TradingOptions.MinQuoteVolumeTraded != 0.0 {
+		if err := b.updateVolumeTraded(ctx); err != nil {
+			panic(fmt.Sprintf("failed to load initial volume traded: %s", err))
+		}
 	}
 
 	var wg sync.WaitGroup

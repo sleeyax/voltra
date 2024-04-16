@@ -52,7 +52,7 @@ func (c Coin) String() string {
 // IsAvailableForTrading checks if the coin should be picked up by the bot for trading.
 // It checks whether the coin has the desired minimum quote asset trading volume, is in the custom list, and it's not a blacklisted symbol. These options are defined in the given config file.
 func (c Coin) IsAvailableForTrading(allowList, denyList []string, pairWith string, minQuoteVolumeTraded float64) bool {
-	if c.QuoteVolumeTraded < minQuoteVolumeTraded {
+	if minQuoteVolumeTraded != 0.0 && c.QuoteVolumeTraded < minQuoteVolumeTraded {
 		return false
 	}
 	if len(denyList) > 0 {
