@@ -323,6 +323,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					fees = buyFee + sellFee
 					profitLoss := (sellPrice-buyPrice)*order.Volume - fees
 					profitLossPercentage := profitLoss / (buyPrice * order.Volume) * 100
+					order.RealizedProfitLoss = &profitLoss
 					msg = fmt.Sprintf(
 						"Sold %g %s. %s: $%.2f %.2f%%",
 						boughtCoin.Volume,

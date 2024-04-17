@@ -43,6 +43,10 @@ type Order struct {
 	// This field is only set when the type is a sell order.
 	EstimatedProfitLoss *float64
 
+	// Optional field for the realized profit or loss.
+	// This field is only set when the type is a sell order.
+	RealizedProfitLoss *float64
+
 	// Whether the order is a dummy/fake order, created in test mode.
 	IsTestMode bool
 }
