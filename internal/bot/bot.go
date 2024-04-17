@@ -22,6 +22,7 @@ type Bot struct {
 	market           market.Market
 	db               database.Database
 	volatilityWindow *VolatilityWindow
+	tradeVolumes     market.TradeVolumes
 	config           *config.Configuration
 	botLog           *zap.SugaredLogger
 	buyLog           *zap.SugaredLogger
@@ -52,6 +53,12 @@ func (b *Bot) Start(ctx context.Context) {
 	defer b.flushLogs()
 	b.botLog.Info("Bot started. Press CTRL + C to quit.")
 
+	if b.config.TradingOptions.MinQuoteVolumeTraded != 0.0 {
+		if err := b.updateVolumeTraded(ctx); err != nil {
+			panic(fmt.Sprintf("failed to load initial volume traded: %s", err))
+		}
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -72,11 +79,20 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 		panic(fmt.Sprintf("failed to load initial latest coins: %s", err))
 	}
 
+	ticker := time.NewTicker(1 * time.Hour)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			b.buyLog.Debug("Bot stopped buying coins.")
 			return
+		case <-ticker.C:
+			// We want to update the volume traded every hour to avoid API rate limiting. This can be a configurable option in the future.
+			if err := b.updateVolumeTraded(ctx); err != nil {
+				b.buyLog.Errorf("Failed to update volume traded: %s.", err)
+				continue
+			}
 		default:
 			// Wait until the next recheck interval.
 			lastRecord := b.volatilityWindow.GetLatestRecord()
@@ -97,6 +113,12 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
 			b.buyLog.Infof("Found %d volatile coins.", len(volatileCoins))
 			for _, volatileCoin := range volatileCoins {
+
+				if !volatileCoin.Coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith, b.config.TradingOptions.MinQuoteVolumeTraded) {
+					b.buyLog.Debugf("Coin %s is not available for trading. Skipping.", volatileCoin.Symbol)
+					continue
+				}
+
 				b.buyLog.Infof("Coin %s has gained %.2f%% within the last %d minutes.", volatileCoin.Symbol, volatileCoin.Percentage, b.config.TradingOptions.TimeDifference)
 
 				// Skip if the coin has already been bought.
@@ -358,6 +380,20 @@ func (b *Bot) getProfitOrLossText(priceChangePercentage float64) string {
 	return profitOrLossText
 }
 
+// updateVolumeTraded fetches the volume traded of all coins from the market and stores them in the CoinVolumes map.
+func (b *Bot) updateVolumeTraded(ctx context.Context) error {
+	b.botLog.Debug("Fetching volume traded of all coins.")
+
+	volumeTraded, err := b.market.GetCoinsVolume(ctx)
+	if err != nil {
+		return err
+	}
+
+	b.tradeVolumes = volumeTraded
+
+	return nil
+}
+
 // updateLatestCoins fetches the latest coins from the market and appends them to the volatilityWindow.
 func (b *Bot) updateLatestCoins(ctx context.Context) error {
 	b.botLog.Debug("Fetching latest coins.")
@@ -365,6 +401,12 @@ func (b *Bot) updateLatestCoins(ctx context.Context) error {
 	coins, err := b.market.GetCoins(ctx)
 	if err != nil {
 		return err
+	}
+
+	for symbol, coin := range coins {
+		if quoteVolume, ok := b.tradeVolumes[symbol]; ok {
+			coin.QuoteVolumeTraded = quoteVolume
+		}
 	}
 
 	b.volatilityWindow.AddRecord(coins)

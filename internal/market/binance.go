@@ -26,13 +26,13 @@ func (b *Binance) Name() string {
 	return "binance"
 }
 
-func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
+func (b *Binance) GetCoins(ctx context.Context) (Coins, error) {
 	prices, err := b.client.NewListPricesService().Do(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	coins := make(CoinMap)
+	coins := make(Coins)
 	now := time.Now()
 
 	for _, price := range prices {
@@ -42,12 +42,25 @@ func (b *Binance) GetCoins(ctx context.Context) (CoinMap, error) {
 			Price:  priceAsFloat,
 			Time:   now,
 		}
-		if coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith) {
-			coins[coin.Symbol] = coin
-		}
+		coins[coin.Symbol] = coin
 	}
 
 	return coins, nil
+}
+
+func (b *Binance) GetCoinsVolume(ctx context.Context) (TradeVolumes, error) {
+	volumeMap := make(TradeVolumes)
+	if b.config.TradingOptions.MinQuoteVolumeTraded != 0.0 {
+		priceStats24Hours, err := b.client.NewListPriceChangeStatsService().Do(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, priceStat := range priceStats24Hours {
+			quoteVolumeAsFloat, _ := strconv.ParseFloat(priceStat.QuoteVolume, 64)
+			volumeMap[priceStat.Symbol] = quoteVolumeAsFloat
+		}
+	}
+	return volumeMap, nil
 }
 
 func (b *Binance) GetSymbolInfo(ctx context.Context, symbol string) (SymbolInfo, error) {
