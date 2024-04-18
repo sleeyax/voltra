@@ -267,8 +267,8 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 
 				// If the price of the coin is below the stop loss or above take profit then sell it.
 				if currentPrice <= stopLoss || currentPrice >= takeProfit {
-					estimatedProfitLoss := (currentPrice - buyPrice) * boughtCoin.Volume * (1 - fees)
-					estimatedProfitLossPercentage := b.config.TradingOptions.Quantity * (priceChangePercentage - fees) / 100
+					estimatedProfitLoss := (currentPrice-buyPrice)*boughtCoin.Volume - fees
+					estimatedProfitLossPercentage := estimatedProfitLoss / (buyPrice * boughtCoin.Volume) * 100
 					msg := fmt.Sprintf(
 						"Selling %g %s. Estimated %s: $%.2f %.2f%%",
 						boughtCoin.Volume,
@@ -321,8 +321,9 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					sellFee = sellPrice * (b.config.TradingOptions.TradingFeeTaker / 100)
 					priceChangePercentage = (sellPrice - buyPrice) / buyPrice * 100
 					fees = buyFee + sellFee
-					profitLoss := (sellPrice - buyPrice) * order.Volume * (1 - fees)
-					profitLossPercentage := b.config.TradingOptions.Quantity * (priceChangePercentage - fees) / 100
+					profitLoss := (sellPrice-buyPrice)*order.Volume - fees
+					profitLossPercentage := profitLoss / (buyPrice * order.Volume) * 100
+					order.RealizedProfitLoss = &profitLoss
 					msg = fmt.Sprintf(
 						"Sold %g %s. %s: $%.2f %.2f%%",
 						boughtCoin.Volume,
