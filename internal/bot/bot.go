@@ -111,7 +111,7 @@ func (b *Bot) buy(ctx context.Context, wg *sync.WaitGroup) {
 
 			// Identify volatile coins in the current time window and trade them if any are found.
 			volatileCoins := b.volatilityWindow.IdentifyVolatileCoins(b.config.TradingOptions.ChangeInPrice)
-			b.buyLog.Infof("Found %d volatile coins.", len(volatileCoins))
+			b.buyLog.Debugf("Found %d volatile coins.", len(volatileCoins))
 			for _, volatileCoin := range volatileCoins {
 
 				if !volatileCoin.Coin.IsAvailableForTrading(b.config.TradingOptions.AllowList, b.config.TradingOptions.DenyList, b.config.TradingOptions.PairWith, b.config.TradingOptions.MinQuoteVolumeTraded) {
@@ -258,7 +258,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					boughtCoin.StopLoss = &sl
 					boughtCoin.TakeProfit = &tp
 
-					b.sellLog.Infof("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %g and trading profit (TP) to %g.", boughtCoin.Symbol, sl, tp)
+					b.sellLog.Debugf("Price of %s reached more than the trading profit (TP). Adjusting stop loss (SL) to %g and trading profit (TP) to %g.", boughtCoin.Symbol, sl, tp)
 
 					b.db.SaveOrder(boughtCoin)
 
@@ -356,7 +356,7 @@ func (b *Bot) sell(ctx context.Context, wg *sync.WaitGroup) {
 					continue
 				}
 
-				b.sellLog.Infow(
+				b.sellLog.Debugw(
 					fmt.Sprintf("Price of %s is %.2f%% away from the buy price. Hodl.", boughtCoin.Symbol, priceChangePercentage),
 					"symbol", boughtCoin.Symbol,
 					"buyPrice", buyPrice,
