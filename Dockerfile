@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine as builder
+FROM golang:1.23-alpine as builder
 
 WORKDIR /build
 
@@ -9,7 +9,7 @@ COPY . ./
 
 RUN go build -ldflags "-s -w" -o voltra ./cmd/main.go
 
-FROM golang:1.22-alpine
+FROM golang:1.23-alpine
 
 WORKDIR /bot
 
