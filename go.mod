@@ -6,7 +6,7 @@ require (
 	github.com/adshao/go-binance/v2 v2.6.1
 	github.com/glebarez/sqlite v1.11.0
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/text v0.19.0
 	gorm.io/gorm v1.25.12
