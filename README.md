@@ -7,10 +7,11 @@
 > [!WARNING]  
 > Trading cryptocurrency carries risks. This bot is a tool, not financial advice. Use at your own discretion.
 
-> [!NOTE]  
-> This project has entered its alpha phase. We welcome you to report and/or help resolve any bugs!
-
 ![build status](https://github.com/sleeyax/voltra/actions/workflows/run_tests.yml/badge.svg)
+
+## Project status
+
+**NO LONGER MAINTAINED. CONSIDER USING [gocryptotrader](https://github.com/thrasher-corp/gocryptotrader) INSTEAD!**
 
 ## Strategy
 The bot analyses changes in price of all coins across all supported marketplaces and places trades on the most volatile ones.
@@ -30,7 +31,7 @@ The bot analyses changes in price of all coins across all supported marketplaces
     - Marketplace API requests are reduced to a minimum
 - [x] Trade history is stored to a (local) database. 
 - [x] Production-grade logging
-- [ ] Receive status updates via Telegram or Discord **- coming very soon!**
+- [ ] Receive status updates via Telegram or Discord
 - [ ] [Request a feature!](https://github.com/sleeyax/voltra/issues/new?assignees=&labels=feature&projects=&template=feature_request.md&title=)
 
 ## Supported markets
